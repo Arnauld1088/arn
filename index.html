@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arnauld | Espace de travail</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f5f7;
+  color: #202b3c;
+  min-height: 100vh;
+}
+
+header {
+  background: #172538;
+  color: white;
+  padding: 35px 8%;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 32px;
+  letter-spacing: 1px;
+}
+
+header p {
+  color: #b8c5d4;
+  margin-bottom: 0;
+}
+
+main {
+  max-width: 1050px;
+  margin: 55px auto;
+  padding: 0 22px;
+}
+
+.intro { margin-bottom: 30px; }
+
+.intro h2 { font-size: 25px; }
+
+.intro p { color: #697586; }
+
+.apps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.app {
+  background: white;
+  padding: 27px;
+  border-radius: 13px;
+  border: 1px solid #e4e8ee;
+  box-shadow: 0 5px 18px rgba(20,35,55,.05);
+  transition: transform .2s, box-shadow .2s;
+}
+
+.app:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(20,35,55,.10);
+}
+
+.app .symbol {
+  font-size: 30px;
+  margin-bottom: 18px;
+}
+
+.app h3 { margin: 0 0 10px; }
+
+.app p {
+  color: #697586;
+  line-height: 1.5;
+  min-height: 45px;
+}
+
+.app a {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 11px 18px;
+  background: #203b59;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.app a:hover { background: #315778; }
+
+footer {
+  text-align: center;
+  color: #8993a1;
+  padding: 30px 15px;
+  font-size: 12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Arnauld.</h1>
+  <p>Espace personnel de travail et de suivi</p>
+</header>
+
+<main>
+  <section class="intro">
+    <h2>Bienvenue dans votre espace</h2>
+    <p>Sélectionnez l'application que vous souhaitez utiliser.</p>
+  </section>
+
+  <section class="apps">
+
+    <article class="app">
+      <div class="symbol">💱</div>
+      <h3>Suivi des changes</h3>
+      <p>Accéder à votre outil de suivi des opérations de change.</p>
+      <a href="suivi-changes.html">Ouvrir l'application →</a>
+    </article>
+
+    <article class="app">
+      <div class="symbol">📦</div>
+      <h3>Suivi des objets prêtés</h3>
+      <p>Consulter et gérer les prêts et les restitutions d'objets.</p>
+      <a href="SUIVI_OBJETS_PRETES.html">Ouvrir l'application →</a>
+    </article>
+
+    <article class="app">
+      <div class="symbol">⚡</div>
+      <h3>Suivi électricité</h3>
+      <p>Accéder à votre outil de suivi de la consommation électrique.</p>
+      <a href="suivi_electricite_03.html">Ouvrir l'application →</a>
+    </article>
+
+  </section>
+</main>
+
+<footer>
+  ARNAULD · ESPACE PERSONNEL
+</footer>
+
+</body>
+</html>
