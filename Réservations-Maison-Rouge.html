@@ -1,0 +1,4441 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Réservations — Maison Rouge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --burgundy: #7A2E2E;
+  --burgundy-dark: #5C2020;
+  --gold: #C08A4E;
+  --cream: #FAF6F0;
+  --paper: #FFFFFF;
+  --ink: #2B2320;
+  --ink-soft: #6B5F58;
+  --line: #E7DED2;
+  --success: #3F7A4E;
+  --warn: #B8863C;
+  --danger: #A13A3A;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2 {
+  font-family: 'Fraunces', serif;
+  margin: 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+/* ===== TOPBAR ===== */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 28px;
+  background: var(--burgundy);
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+
+.brand-mark {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.6);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.brand-text h1 { font-size: 19px; font-weight: 600; letter-spacing: 0.3px; }
+.brand-text p { margin: 0; font-size: 11px; opacity: 0.75; letter-spacing: 0.5px; text-transform: uppercase; }
+
+.tabs { display: flex; gap: 4px; margin-left: 12px; flex: 1; flex-wrap: wrap; }
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: white; background: rgba(255,255,255,0.08); }
+.tab-btn.active { color: var(--burgundy); background: white; }
+
+.api-status {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.85;
+}
+.api-status .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #999;
+}
+.api-status.ok .dot { background: #6FCF97; }
+.api-status.error .dot { background: #EB5757; }
+
+/* ===== LAYOUT ===== */
+.content { padding: 28px; max-width: 1400px; margin: 0 auto; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.grid-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .grid-layout { grid-template-columns: 1fr; }
+}
+
+.col-form, .col-results { display: flex; flex-direction: column; gap: 16px; }
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+
+.card h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--burgundy-dark);
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.card-header-row h2 { margin-bottom: 0; }
+
+/* ===== SEGMENTED CONTROL ===== */
+.segmented { display: flex; gap: 6px; }
+.seg-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: var(--cream);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--ink-soft);
+  transition: all 0.15s;
+}
+.seg-btn.active {
+  background: var(--burgundy);
+  border-color: var(--burgundy);
+  color: white;
+}
+
+/* ===== FORM FIELDS ===== */
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.field-grid label.span2 { grid-column: 1 / -1; }
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+input[type="text"], input[type="number"], select, textarea {
+  font-family: 'Inter', sans-serif;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--paper);
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+  border-color: var(--gold);
+}
+
+textarea { width: 100%; resize: vertical; font-family: 'Inter', sans-serif; }
+
+.checkbox-line {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+}
+.checkbox-line input { width: 16px; height: 16px; }
+
+/* ===== ROOMS ===== */
+.room-row {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: var(--cream);
+}
+.room-fields { grid-template-columns: repeat(3, 1fr); }
+.btn-remove-room {
+  margin-top: 10px;
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 12.5px;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ===== BUTTONS ===== */
+.btn-primary {
+  background: var(--burgundy);
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: var(--burgundy-dark); }
+.btn-full { width: 100%; }
+
+.btn-small {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  color: var(--burgundy-dark);
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.btn-small:hover { border-color: var(--burgundy); }
+
+/* ===== OUTPUT BOXES ===== */
+.output-box {
+  width: 100%;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'Inter', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink);
+}
+pre.output-box { margin: 0 0 4px 0; }
+textarea.output-box { margin-top: 4px; }
+
+.loading-text { font-size: 13px; color: var(--gold); margin-top: 8px; }
+.error-text { font-size: 13px; color: var(--danger); margin-top: 8px; }
+.hint-text { font-size: 12px; color: var(--ink-soft); margin: 8px 0 0 0; text-align: center; }
+
+/* ===== HISTORY ===== */
+.history-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.history-toolbar input { flex: 1; }
+.history-toolbar select { width: 200px; }
+
+.history-list { display: flex; flex-direction: column; gap: 10px; }
+
+.history-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.history-item:hover { border-color: var(--gold); }
+
+.history-item-main h3 { margin: 0 0 4px 0; font-size: 15px; font-family: 'Inter', sans-serif; font-weight: 600; }
+.history-item-main p { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.badge-option { background: #FCEFD9; color: var(--warn); }
+.badge-confirmee { background: #E3F3E6; color: var(--success); }
+.badge-annulee { background: #F1E9E9; color: var(--ink-soft); }
+.badge-no_show { background: #FBE4E4; color: var(--danger); }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+/* ===== PARAMÈTRES ===== */
+.settings-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 4px; }
+.settings-table th, .settings-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.settings-table th { color: var(--ink-soft); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.3px; }
+.settings-table td.narrow { width: 130px; }
+.settings-table input[type="number"], .settings-table input[type="text"], .settings-table select {
+  width: 100%; padding: 6px 8px; font-size: 13px; border: 1px solid var(--line); border-radius: 6px;
+}
+.settings-row-actions { width: 34px; text-align: center; }
+.settings-row-actions .btn-remove-room { font-size: 15px; }
+.settings-grille-title { font-size: 13.5px; font-weight: 600; margin: 16px 0 6px 0; color: var(--burgundy-dark); }
+.settings-grille-title:first-child { margin-top: 0; }
+
+/* ===== PLANNING / CALENDRIER ===== */
+.cal-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.cal-toolbar h2 { font-size: 16px; }
+.cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 6px; text-align: center; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-cell { min-height: 84px; border: 1px solid var(--line); border-radius: 8px; padding: 6px; background: var(--paper); cursor: pointer; overflow: hidden; transition: border-color 0.15s; }
+.cal-cell:hover { border-color: var(--gold); }
+.cal-cell-empty { background: transparent; border: none; cursor: default; }
+.cal-cell-today { border-color: var(--burgundy); border-width: 2px; }
+.cal-cell-selected { background: var(--cream); border-color: var(--gold); border-width: 2px; }
+.cal-daynum { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 3px; }
+.cal-item { font-size: 10.5px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1px; }
+.cal-item-arrival { color: var(--success); }
+.cal-item-departure { color: var(--warn); }
+.cal-item-event { color: var(--burgundy); }
+.cal-item-more { color: var(--ink-soft); font-style: italic; }
+.cal-legend { display: flex; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--ink-soft); }
+.cal-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.cal-dot-arrival { background: var(--success); }
+.cal-dot-departure { background: var(--warn); }
+.cal-dot-event { background: var(--burgundy); }
+.cal-detail-item { padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; margin-bottom: 6px; font-size: 13px; cursor: pointer; transition: border-color 0.15s; }
+.cal-detail-item:hover { border-color: var(--gold); }
+.cal-detail-arrival { border-left: 3px solid var(--success); }
+.cal-detail-departure { border-left: 3px solid var(--warn); }
+.cal-detail-event { border-left: 3px solid var(--burgundy); }
+
+/* ===== TÂCHES DE SHIFT ===== */
+.shift-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.shift-toolbar input[type="date"] { width: auto; }
+.shift-progress { font-size: 12.5px; color: var(--ink-soft); font-weight: 600; margin-left: auto; }
+.task-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.task-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--cream);
+}
+.task-row.task-done { background: #E3F3E6; border-color: #cfe6d3; }
+.task-row input[type="checkbox"] { width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; }
+.task-row .task-label { flex: 1; font-size: 13.5px; line-height: 1.4; }
+.task-row.task-done .task-label { text-decoration: line-through; color: var(--ink-soft); }
+.task-row .task-remove { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 13px; padding: 0 2px; flex-shrink: 0; }
+.task-add-row { display: flex; gap: 8px; margin-top: 10px; }
+.task-add-row input { flex: 1; }
+.task-add-row button { margin-top: 0; white-space: nowrap; }
+.shift-alert-item { padding: 8px 10px; border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: 7px; margin-bottom: 6px; font-size: 13px; cursor: pointer; transition: border-color 0.15s; }
+.shift-alert-item:hover { border-color: var(--gold); }
+.shift-alert-item b { color: var(--burgundy-dark); }
+
+@media (max-width: 700px) {
+  .cal-cell { min-height: 58px; padding: 4px; }
+  .cal-item { font-size: 9px; }
+}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<div class="app-shell">
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="brand-mark">MR</span>
+      <div class="brand-text">
+        <h1>Maison Rouge</h1>
+        <p>Gestion des réservations · v16</p>
+      </div>
+    </div>
+    <nav class="tabs" id="mainTabs">
+      <button class="tab-btn active" data-tab="new" data-mode="chambre">Réservation chambre</button>
+      <button class="tab-btn" data-tab="new" data-mode="evenement">Réservation événement</button>
+      <button class="tab-btn" data-tab="new" data-mode="mixte">Chambre + événement</button>
+      <button class="tab-btn" data-tab="planning">Planning</button>
+      <button class="tab-btn" data-tab="tasks">Tâches du shift</button>
+      <button class="tab-btn" data-tab="analyze">Analyser un mail</button>
+      <button class="tab-btn" data-tab="settings">Paramètres</button>
+      <button class="tab-btn" data-tab="history">Historique</button>
+    </nav>
+    <div class="api-status ok">
+      <span class="dot"></span> <span class="label">Mode local — aucune connexion requise</span>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- ============ ONGLET: NOUVELLE RÉSERVATION ============ -->
+    <section id="tab-new" class="tab-panel active">
+      <form id="resaForm" class="grid-layout">
+
+        <!-- Colonne gauche : formulaire -->
+        <div class="col-form">
+
+          <div class="card">
+            <h2>Type de client</h2>
+            <div class="segmented" id="typeSegmented">
+              <button type="button" class="seg-btn active" data-value="particulier">Particulier</button>
+              <button type="button" class="seg-btn" data-value="institution">Institution</button>
+              <button type="button" class="seg-btn" data-value="groupe">Groupe</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Informations générales</h2>
+            <div class="field-grid">
+              <label>Agent
+                <input type="text" name="agent" value="ARN" />
+              </label>
+              <label>Canal de réservation
+                <select name="canal">
+                  <option value="mail">Mail</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="tel">Téléphone</option>
+                  <option value="siteminder">Siteminder</option>
+                  <option value="appel">Appel à la réception</option>
+                </select>
+              </label>
+              <label>Date de la demande
+                <input type="text" name="date_demande" placeholder="ex: 10.04.2026" />
+              </label>
+              <label>Civilité
+                <select name="civilite">
+                  <option>Monsieur</option>
+                  <option>Madame</option>
+                  <option>Monsieur/Madame</option>
+                </select>
+              </label>
+              <label class="span2">Nom du client
+                <input type="text" name="nom_client" placeholder="ex: FIGUEREDO" required />
+              </label>
+            </div>
+          </div>
+
+          <div class="card" id="institutionCard" style="display:none;">
+            <h2>Institution / Société</h2>
+            <div class="field-grid">
+              <label class="span2">Nom de la société / institution
+                <input type="text" name="societe" placeholder="ex: Banque Mondiale, Ambassade d'Allemagne..." />
+              </label>
+              <label>Tarif spécial appliqué
+                <input type="text" name="tarif_special_nom" placeholder="ex: tarif société, AFD, KfW..." />
+              </label>
+              <label>Numéro IFU
+                <input type="text" name="ifu" />
+              </label>
+              <label class="checkbox-line">
+                <input type="checkbox" name="exoneration_tva" /> Exonération de TVA
+              </label>
+              <label class="checkbox-line">
+                <input type="checkbox" name="bon_de_commande_requis" /> Bon de commande requis
+              </label>
+              <div class="span2" id="bdcStatutWrap" style="display:none;">
+                <label>Statut du bon de commande
+                  <select name="bon_de_commande_statut">
+                    <option value="en_attente">En attente</option>
+                    <option value="recu">Reçu</option>
+                    <option value="mail_fait_office">Le mail fait office de BDC</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="groupeCard" style="display:none;">
+            <h2>Groupe</h2>
+            <label class="checkbox-line">
+              <input type="checkbox" name="rooming_list_requise" /> Rooming list nécessaire
+            </label>
+            <div id="roomingStatutWrap" style="display:none; margin-top:10px;">
+              <label>Statut de la rooming list
+                <select name="rooming_list_statut">
+                  <option value="en_attente">En attente</option>
+                  <option value="recue">Reçue</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Grille tarifaire</h2>
+            <div class="field-grid">
+              <label>Grille appliquée
+                <select id="grilleSelect">
+                  <option value="public">Tarif public</option>
+                  <option value="societe">Tarif société</option>
+                  <option value="tour_operator">Tarif tour opérateur</option>
+                </select>
+              </label>
+              <label>Régime
+                <select id="regimeSelect">
+                  <option value="ttc">TTC</option>
+                  <option value="ht">HT</option>
+                </select>
+              </label>
+            </div>
+            <p class="hint-text" style="text-align:left;">Sélectionner un type de chambre ci-dessous remplira automatiquement le tarif selon cette grille — modifiable ensuite si besoin.</p>
+          </div>
+
+          <div class="card" id="roomsCard">
+            <div class="card-header-row">
+              <h2>Chambre(s)</h2>
+              <button type="button" class="btn-small" id="addRoomBtn">+ Ajouter une chambre</button>
+            </div>
+            <div id="roomsList"></div>
+          </div>
+
+          <div class="card" id="prestationsCard">
+            <div class="card-header-row">
+              <h2>Prestation(s) événement</h2>
+              <button type="button" class="btn-small" id="addPrestationBtn">+ Ajouter une prestation</button>
+            </div>
+            <p class="hint-text" style="text-align:left;">Brunch, déjeuner, dîner, anniversaire, cocktail, location d'espace...</p>
+            <div id="prestationsList"></div>
+          </div>
+
+          <p class="hint-text" id="hiddenDataHint" style="display:none; text-align:left; background:#FCEFD9; border:1px solid var(--warn); border-radius:8px; padding:10px 12px; color:var(--warn); font-weight:500;"></p>
+
+          <div class="card" id="lateCheckoutCard">
+            <h2>Late check-out</h2>
+            <label class="checkbox-line">
+              <input type="checkbox" name="late_checkout" /> Late check-out demandé
+            </label>
+            <label style="margin-top:10px;">Détail (optionnel)
+              <input type="text" name="late_checkout_detail" placeholder="ex: départ 20h40, vol tardif" />
+            </label>
+          </div>
+
+          <div class="card" id="navetteCard">
+            <h2>Navette aéroport</h2>
+            <div class="field-grid">
+              <label>Statut
+                <select name="navette_statut" id="navetteStatut">
+                  <option value="en_attente">En attente d'infos de vol</option>
+                  <option value="confirmee">Confirmée (infos de vol reçues)</option>
+                  <option value="non_souhaitee">Non souhaitée</option>
+                </select>
+              </label>
+            </div>
+            <div class="field-grid" id="navetteVolsWrap" style="display:none;">
+              <label>Vol arrivée
+                <input type="text" name="navette_vol_arrivee" placeholder="ex: SN345 19h05" />
+              </label>
+              <label>Vol départ
+                <input type="text" name="navette_vol_depart" placeholder="ex: SN346 20h25" />
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Garantie / paiement</h2>
+            <div class="field-grid">
+              <label>Statut
+                <select name="garantie_statut" id="garantieStatut">
+                  <option value="en_attente">En attente</option>
+                  <option value="recue">Reçue</option>
+                </select>
+              </label>
+              <label>Mode
+                <select name="garantie_mode">
+                  <option value="">—</option>
+                  <option value="lien_paiement">Lien de paiement sécurisé</option>
+                  <option value="preautorisation">Préautorisation carte</option>
+                  <option value="especes">Espèces à la réception</option>
+                  <option value="virement">Virement bancaire</option>
+                  <option value="mobile_money">Mobile Money</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Prise en charge & facturation</h2>
+            <div class="field-grid">
+              <label>Prise en charge des frais
+                <select name="prise_en_charge">
+                  <option value="a_confirmer">À confirmer</option>
+                  <option value="societe_paie_tout">Société/institution paie tout</option>
+                  <option value="client_paie_extras">Client règle sur place (hébergement et/ou extras)</option>
+                </select>
+              </label>
+              <label>Facturation
+                <select name="paie_ttc_ou_ht">
+                  <option value="a_confirmer">À confirmer</option>
+                  <option value="ttc">TTC</option>
+                  <option value="ht">HT</option>
+                </select>
+              </label>
+              <label>Formule repas
+                <select name="formule_repas">
+                  <option value="aucune">Aucune</option>
+                  <option value="a_proposer">À proposer au client</option>
+                  <option value="demi_pension">Demi-pension</option>
+                  <option value="pension_complete">Pension complète</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Notes libres</h2>
+            <textarea name="notes_libres" rows="3" placeholder="ex: chambre doit être nickel car client exigeant, brunch du 23 février pour 4 personnes..."></textarea>
+          </div>
+
+          <div class="card">
+            <h2>Conditions d'annulation</h2>
+            <div class="field-grid">
+              <label>Politique applicable
+                <select name="conditions_annulation" id="conditionsAnnulationSelect">
+                  <option value="standard_48h">Standard : gratuite jusqu'à 48h avant, sinon 1 nuitée facturée</option>
+                  <option value="deux_semaines">Groupe : gratuite jusqu'à 2 semaines avant, sinon 1 nuitée facturée</option>
+                  <option value="acompte_30">Acompte 30% : solde à réception facture, gratuite jusqu'à 7 jours avant, sinon pénalité 30%</option>
+                  <option value="personnalisee">Personnalisée (texte libre)</option>
+                </select>
+              </label>
+            </div>
+            <div id="conditionsAnnulationTexteWrap" style="display:none; margin-top:10px;">
+              <label>Texte personnalisé
+                <textarea name="conditions_annulation_texte" rows="2"></textarea>
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Informations complémentaires (optionnel)</h2>
+            <label class="checkbox-line">
+              <input type="checkbox" name="inclure_infos_pratiques" /> Inclure les infos pratiques (petit établissement, différence chambre éco/classique)
+            </label>
+          </div>
+
+          <div class="card">
+            <h2>Mail "prise en charge par un tiers" (si applicable)</h2>
+            <div class="field-grid">
+              <label>Contact du tiers (si différent du client)
+                <input type="text" name="contact_tiers" placeholder="ex: Madame CHLOÉ" />
+              </label>
+              <label class="span2">Objet à faire confirmer
+                <input type="text" name="objet_prise_en_charge" placeholder="ex: le late check-out complet du jeudi 9 janvier 2025" />
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Statut de la réservation</h2>
+            <select name="statut">
+              <option value="option">Option</option>
+              <option value="confirmee">Confirmée</option>
+              <option value="annulee">Annulée</option>
+              <option value="no_show">No-show</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Colonne droite : résultats -->
+        <div class="col-results">
+          <div class="card sticky-card">
+            <h2>Commentaire de réservation</h2>
+            <pre id="commentOutput" class="output-box">—</pre>
+            <button type="button" class="btn-small" id="copyCommentBtn">Copier</button>
+          </div>
+
+          <div class="card sticky-card">
+            <h2>Email proposé</h2>
+            <div class="field-grid" style="margin-bottom:10px;">
+              <label>Type de mail
+                <select id="emailTypeSelect">
+                  <option value="confirmation">Confirmation de réservation</option>
+                  <option value="proposition_disponibilite">Proposition de disponibilité</option>
+                  <option value="evenement">Confirmation événement / brunch</option>
+                  <option value="modification">Modification de réservation</option>
+                  <option value="no_show">No-show / annulation tardive</option>
+                  <option value="envoi_tarifs">Envoi de la grille tarifaire</option>
+                  <option value="prise_en_charge">Confirmation de prise en charge (par un tiers)</option>
+                </select>
+              </label>
+            </div>
+            <button type="button" class="btn-primary" id="generateEmailBtn">Générer l'email</button>
+            <textarea id="emailOutput" class="output-box" rows="16" placeholder="L'email généré apparaîtra ici..."></textarea>
+            <button type="button" class="btn-small" id="copyEmailBtn">Copier l'email</button>
+          </div>
+
+          <div class="card">
+            <h2>Proforma (Excel + PDF, bilingue FR/EN)</h2>
+            <p class="hint-text" style="text-align:left; margin-bottom:10px;">Générée automatiquement à partir des chambres et/ou prestations saisies ci-dessus (numéro de référence auto-incrémenté).</p>
+            <button type="button" class="btn-primary btn-full" id="generateProformaExcelBtn">📊 Télécharger Excel (.xlsx)</button>
+            <button type="button" class="btn-small btn-full" id="generateProformaPdfBtn" style="margin-top:8px;">📄 Télécharger PDF</button>
+            <div id="proformaError" class="error-text" style="display:none;"></div>
+          </div>
+
+          <div class="card">
+            <button type="submit" class="btn-primary btn-full" id="saveBtn">Enregistrer la réservation</button>
+            <p class="hint-text" id="saveHint"></p>
+          </div>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- ============ ONGLET: PLANNING ============ -->
+    <section id="tab-planning" class="tab-panel">
+      <div class="card">
+        <div class="cal-toolbar">
+          <button type="button" class="btn-small" id="calPrevBtn">‹ Précédent</button>
+          <h2 id="calendarMonthLabel" style="flex:1; text-align:center;"></h2>
+          <button type="button" class="btn-small" id="calNextBtn">Suivant ›</button>
+          <button type="button" class="btn-small" id="calTodayBtn">Aujourd'hui</button>
+        </div>
+        <div class="cal-weekdays">
+          <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+        </div>
+        <div class="cal-grid" id="calendarGrid"></div>
+        <div class="cal-legend">
+          <span><span class="cal-dot cal-dot-arrival"></span>Arrivée</span>
+          <span><span class="cal-dot cal-dot-departure"></span>Départ</span>
+          <span><span class="cal-dot cal-dot-event"></span>Événement</span>
+        </div>
+      </div>
+
+      <div class="card" id="calendarDayDetail">
+        <div class="empty-state">Cliquez sur un jour du calendrier pour voir le détail.</div>
+      </div>
+    </section>
+
+    <!-- ============ ONGLET: TÂCHES DU SHIFT ============ -->
+    <section id="tab-tasks" class="tab-panel">
+      <div class="grid-layout">
+        <div class="col-form">
+
+          <div class="card">
+            <div class="shift-toolbar">
+              <label style="flex-direction:row; align-items:center; gap:8px;">
+                Jour :
+                <input type="date" id="shiftDateInput" />
+              </label>
+              <button type="button" class="btn-small" id="shiftTodayBtn">Aujourd'hui</button>
+              <span class="shift-progress" id="shiftProgressLabel"></span>
+            </div>
+            <p class="hint-text" style="text-align:left;">La checklist et les notes sont propres à chaque jour — changez de date pour préparer ou consulter un autre shift.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-header-row">
+              <h2>Checklist du shift</h2>
+              <button type="button" class="btn-small" id="resetShiftChecksBtn">Décocher tout</button>
+            </div>
+            <p class="hint-text" style="text-align:left;">Tâches récurrentes de la routine (arrivées/départs, garanties, navettes, transmission à la relève...). Gérez la liste type ci-dessous — elle se réapplique, décochée, chaque nouveau jour.</p>
+            <div id="recurringTaskList" class="task-list"></div>
+            <div class="task-add-row">
+              <input type="text" id="newRecurringTaskInput" placeholder="Ajouter une tâche récurrente..." />
+              <button type="button" class="btn-small" id="addRecurringTaskBtn">+ Ajouter</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Tâches ponctuelles du jour</h2>
+            <p class="hint-text" style="text-align:left;">Pour ce qui ne concerne que ce jour précis (ex: "rappeler M. Dupont à 15h", "préparer le brunch de samedi").</p>
+            <div id="adHocTaskList" class="task-list"></div>
+            <div class="task-add-row">
+              <input type="text" id="newAdHocTaskInput" placeholder="Ajouter une tâche pour aujourd'hui..." />
+              <button type="button" class="btn-small" id="addAdHocTaskBtn">+ Ajouter</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Notes / consignes de shift</h2>
+            <textarea id="shiftNotesInput" rows="5" placeholder="ex: client en chambre 5 très exigeant, rappeler le fournisseur pour le brunch de samedi, caisse à vérifier ce soir..."></textarea>
+            <p class="hint-text" id="shiftNotesHint" style="text-align:left;"></p>
+          </div>
+
+        </div>
+
+        <div class="col-results">
+          <div class="card">
+            <h2>À surveiller aujourd'hui</h2>
+            <p class="hint-text" style="text-align:left; margin-bottom:8px;">Généré automatiquement à partir des réservations : arrivées/départs du jour et éléments en attente (navette, garantie, bon de commande, rooming list).</p>
+            <div id="shiftAlertsList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ONGLET: ANALYSER UN MAIL ============ -->
+    <section id="tab-analyze" class="tab-panel">
+      <div class="grid-layout">
+        <div class="col-form">
+          <div class="card">
+            <h2>Coller la boucle de mails</h2>
+            <p class="hint-text" style="text-align:left; margin-bottom:10px;">
+              Collez ici l'échange d'emails avec le client (demande initiale, réponses...).
+              L'analyse repère par mots-clés les infos courantes (dates, tarif, navette, garantie, rooming list, bon de commande...).
+              C'est une détection locale par patterns, pas une compréhension fine — vérifiez toujours le résultat avant de pré-remplir.
+            </p>
+            <textarea id="emailAnalyzeInput" rows="18" placeholder="Collez ici le texte du mail ou de la boucle de mails..."></textarea>
+            <button type="button" class="btn-primary btn-full" id="analyzeEmailBtn" style="margin-top:10px;">🔍 Analyser le mail</button>
+          </div>
+        </div>
+        <div class="col-results">
+          <div class="card">
+            <h2>Informations détectées</h2>
+            <div id="analyzeResults" class="empty-state">Collez un mail à gauche puis cliquez sur « Analyser » pour voir les informations détectées ici.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ONGLET: PARAMÈTRES ============ -->
+    <section id="tab-settings" class="tab-panel">
+      <div class="card">
+        <h2>Informations de l'hôtel</h2>
+        <div class="field-grid">
+          <label class="span2">Nom
+            <input type="text" id="set_hotel_nom" />
+          </label>
+          <label class="span2">Adresse
+            <input type="text" id="set_hotel_adresse" />
+          </label>
+          <label>Téléphone
+            <input type="text" id="set_hotel_telephone" />
+          </label>
+          <label>Site internet
+            <input type="text" id="set_hotel_site" />
+          </label>
+          <label>RCCM
+            <input type="text" id="set_hotel_rccm" />
+          </label>
+          <label>IFU
+            <input type="text" id="set_hotel_ifu" />
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Devises &amp; TVA</h2>
+        <div class="field-grid">
+          <label>TVA (%)
+            <input type="number" id="set_tva_pct" min="0" step="0.1" />
+          </label>
+          <label>Taux de conversion USD (1 $ = ... F CFA)
+            <input type="number" id="set_taux_usd" min="0" step="1" />
+          </label>
+          <label>Taux de conversion EUR (1 € = ... F CFA)
+            <input type="number" id="set_taux_eur" min="0" step="0.01" />
+          </label>
+        </div>
+        <p class="hint-text" style="text-align:left; margin-top:8px;">Le tarif HT des chambres est calculé automatiquement à partir du tarif TTC et de ce taux de TVA (TTC ÷ (1 + TVA)).</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header-row">
+          <h2>Agents</h2>
+          <button type="button" class="btn-small" id="addAgentBtn">+ Ajouter un agent</button>
+        </div>
+        <p class="hint-text" style="text-align:left; margin-bottom:8px;">Le code agent (ex : ARN) est celui saisi dans le champ "Agent" des formulaires. Le prénom sert à personnaliser la signature des emails générés.</p>
+        <table class="settings-table" id="agentsTable">
+          <thead><tr><th>Code</th><th>Prénom</th><th></th></tr></thead>
+          <tbody id="agentsTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Grille tarifaire des chambres</h2>
+        <p class="hint-text" style="text-align:left; margin-bottom:10px;">Tarif TTC et taxe de séjour par catégorie et par grille. Le tarif HT correspondant est calculé automatiquement.</p>
+        <div id="roomRatesTables"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header-row">
+          <h2>Grille tarifaire des événements — Formules &amp; prestations</h2>
+          <button type="button" class="btn-small" id="addFormuleBtn">+ Ajouter une formule</button>
+        </div>
+        <p class="hint-text" style="text-align:left; margin-bottom:10px;">En attente de votre fichier de formules — ajoutez des lignes ici au fur et à mesure, ou d'un coup une fois le fichier reçu.</p>
+        <table class="settings-table" id="formulesTable">
+          <thead><tr><th>Type(s)</th><th>Formule</th><th>Tarif</th><th>Tarif enfant -10 ans</th><th>Description</th><th></th></tr></thead>
+          <tbody id="formulesTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <button type="button" class="btn-primary btn-full" id="saveSettingsBtn">💾 Enregistrer les paramètres</button>
+        <button type="button" class="btn-small btn-full" id="resetSettingsBtn" style="margin-top:8px;">Réinitialiser aux valeurs par défaut</button>
+        <p class="hint-text" id="saveSettingsHint"></p>
+      </div>
+    </section>
+
+    <!-- ============ ONGLET: HISTORIQUE ============ -->
+    <section id="tab-history" class="tab-panel">
+      <div class="card">
+        <div class="segmented" id="historyKindSegmented" style="margin-bottom:14px;">
+          <button type="button" class="seg-btn active" data-value="toutes">Toutes</button>
+          <button type="button" class="seg-btn" data-value="chambres">Chambres</button>
+          <button type="button" class="seg-btn" data-value="evenements">Événements</button>
+        </div>
+        <div class="history-toolbar">
+          <input type="text" id="searchInput" placeholder="Rechercher par nom ou société..." />
+          <select id="statutFilter">
+            <option value="">Tous les statuts</option>
+            <option value="option">Option</option>
+            <option value="confirmee">Confirmée</option>
+            <option value="annulee">Annulée</option>
+            <option value="no_show">No-show</option>
+          </select>
+        </div>
+        <div id="historyList" class="history-list"></div>
+        <div style="display:flex; gap:10px; margin-top:14px;">
+          <button type="button" class="btn-small" id="exportBtn">Exporter tout l'historique (.json)</button>
+          <button type="button" class="btn-small" id="importBtn">Importer un historique (.json)</button>
+          <input type="file" id="importFileInput" accept=".json" style="display:none;" />
+        </div>
+        <p class="hint-text" id="importHint" style="text-align:left;"></p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<template id="roomRowTemplate">
+  <div class="room-row">
+    <div class="field-grid room-fields">
+      <label>Type de chambre
+        <select class="r-type-select"></select>
+        <input type="hidden" class="r-type" />
+      </label>
+      <label>Occupant
+        <input type="text" class="r-occupant" placeholder="ex: M. Dupont" />
+      </label>
+      <label>Arrivée
+        <input type="date" class="r-arrivee" />
+      </label>
+      <label>Départ
+        <input type="date" class="r-depart" />
+      </label>
+      <label>Nombre de nuits
+        <input type="number" class="r-nuits" min="1" value="1" readonly style="background:#F0EBE3; cursor:not-allowed;" />
+      </label>
+      <label>Tarif nuitée (F CFA)
+        <input type="text" class="r-tarif" placeholder="ex: 99 000" />
+        <input type="hidden" class="r-supp" />
+      </label>
+      <label>Taxe séjour / pers. / nuit (F CFA)
+        <input type="text" class="r-taxe" placeholder="ex: 1 500" />
+      </label>
+      <label>Nb personnes
+        <input type="number" class="r-personnes" min="1" value="1" />
+      </label>
+      <label>Dont enfants -10 ans
+        <input type="number" class="r-enfants" min="0" value="0" />
+      </label>
+      <label>N° de réservation (optionnel)
+        <input type="text" class="r-numero" placeholder="ex: 19142" />
+      </label>
+      <label>Responsable du paiement (si différent)
+        <input type="text" class="r-responsable" placeholder="ex: à la charge du client" />
+      </label>
+    </div>
+    <button type="button" class="btn-remove-room">Retirer cette chambre</button>
+  </div>
+</template>
+
+<template id="prestationRowTemplate">
+  <div class="room-row">
+    <div class="field-grid room-fields">
+      <label>Type d'événement
+        <select class="p-type-select">
+          <option value="brunch">Brunch</option>
+          <option value="dejeuner">Déjeuner</option>
+          <option value="diner">Dîner</option>
+          <option value="anniversaire">Anniversaire / Cocktail</option>
+          <option value="autre">Autre</option>
+        </select>
+      </label>
+      <label>Formule
+        <select class="p-formule-select">
+          <option value="">— Aucune / personnalisée —</option>
+        </select>
+        <input type="hidden" class="p-forfait" />
+      </label>
+      <label>Date de l'événement
+        <input type="date" class="p-date" />
+      </label>
+      <label>Heure
+        <input type="text" class="p-heure" placeholder="ex: 12h00" />
+      </label>
+      <label>Lieu
+        <select class="p-lieu-select">
+          <option value="">— À préciser —</option>
+          <option value="salle_m3">Salle M3</option>
+          <option value="salle_m4">Salle M4</option>
+          <option value="terrasse_m1">Terrasse M1</option>
+          <option value="terrasse_m3">Terrasse M3</option>
+          <option value="terrasse_m4">Terrasse M4</option>
+          <option value="rooftop_m1">Rooftop M1</option>
+          <option value="restaurant">Restaurant</option>
+          <option value="salon_xf">Salon XF</option>
+        </select>
+      </label>
+      <label>Nombre de personnes
+        <input type="number" class="p-personnes" min="1" value="1" />
+      </label>
+      <label>Dont enfants -10 ans
+        <input type="number" class="p-enfants" min="0" value="0" />
+      </label>
+      <label>Tarif (F CFA)
+        <input type="text" class="p-tarif" placeholder="ex: 25 000" />
+        <input type="hidden" class="p-tarif-enfant" />
+      </label>
+      <label class="span2">Formule / menu
+        <textarea class="p-menu" rows="2" placeholder="ex: buffet brunch avec boissons, gâteau d'anniversaire..."></textarea>
+      </label>
+    </div>
+    <button type="button" class="btn-remove-room">Retirer cette prestation</button>
+  </div>
+</template>
+
+<script>
+/**
+ * Grille tarifaire 2026 - Maison Rouge
+ */
+
+const ROOM_CATEGORIES = [
+  { code: 'classique_eco', label: 'Chambre Classique Économique', labelEn: 'Economy Classic Room', numero: null, quantite: 2 },
+  { code: 'classique_vue_cour', label: 'Chambre Classique Vue Cour', labelEn: 'Classic Room Courtyard View', numero: null, quantite: 8 },
+  { code: 'superieure_balcon', label: 'Chambre Supérieure avec Balcon', labelEn: 'Superior Room with Balcony', numero: null, quantite: 8 },
+  { code: 'suite_junior_piscine', label: 'Suite Junior Vue Piscine', labelEn: 'Junior Suite Pool View', numero: '203', quantite: 1 },
+  { code: 'suite_superieure_cour', label: 'Suite Supérieure Vue Cour', labelEn: 'Superior Suite Courtyard View', numero: '206', quantite: 1 },
+  { code: 'suite_superieure_piscine', label: 'Suite Supérieure Vue Piscine', labelEn: 'Superior Suite Pool View', numero: '202', quantite: 1 },
+  { code: 'suite_presidentielle', label: 'Suite Présidentielle Vue Piscine', labelEn: 'Presidential Suite Pool View', numero: '409', quantite: 1 },
+];
+
+// Abréviations utilisées UNIQUEMENT dans le commentaire interne (pas dans les emails
+// clients ni la proforma, qui gardent le nom complet). Pour les suites, on utilise le
+// numéro de chambre plutôt que le nom, chaque suite étant une chambre unique identifiable.
+const ROOM_ABBREVIATIONS = {
+  classique_eco: 'CLASS ECO',
+  classique_vue_cour: 'CLASS',
+  superieure_balcon: 'SUP',
+};
+
+/**
+ * Résout l'abréviation à utiliser dans le commentaire interne pour un type de
+ * chambre donné (à partir du libellé complet stocké sur la ligne de chambre).
+ * Suites -> numéro de chambre. Chambres standard -> abréviation courte.
+ * Type non reconnu -> libellé tel quel (en majuscules).
+ */
+function getRoomAbbreviation(typeChambreLabel) {
+  if (!typeChambreLabel) return 'CHAMBRE';
+  const cat = ROOM_CATEGORIES.find((c) => typeChambreLabel.includes(c.label));
+  if (!cat) return typeChambreLabel.toUpperCase();
+  if (cat.numero) return cat.numero;
+  return ROOM_ABBREVIATIONS[cat.code] || cat.label.toUpperCase();
+}
+
+/* =========================================================================
+   PARAMÈTRES (grille tarifaire chambres, infos hôtel, devises, agents,
+   formules événements) — configurables depuis l'onglet "Paramètres" et
+   persistés en localStorage. Les valeurs ci-dessous sont les valeurs par
+   défaut / de secours utilisées tant qu'aucun paramètre n'a été enregistré.
+   ========================================================================= */
+
+const SETTINGS_STORAGE_KEY = 'maisonrouge_parametres';
+
+const DEFAULT_SETTINGS = {
+  hotel: {
+    nom: 'MAISON ROUGE',
+    adresse: 'Bld de la Marina 08 BP 0847 COTONOU',
+    telephone: '(+229) 65126989 / 21300901 / 97976188',
+    site: 'www.maison-rouge-cotonou.com',
+    rccm: 'RCCM RB COT/11 B 7877',
+    ifu: '3201101253314',
+  },
+  finance: {
+    tva_pct: 18,
+    taux_usd: 550,
+    taux_eur: 655.95,
+  },
+  agents: [{ code: 'ARN', prenom: 'Arnauld' }],
+  chambres: {
+    public: {
+      classique_eco: { tarif: 103000, taxe: 2500 },
+      classique_vue_cour: { tarif: 119000, taxe: 2500 },
+      superieure_balcon: { tarif: 175000, taxe: 2500 },
+      suite_junior_piscine: { tarif: 190000, taxe: 2500 },
+      suite_superieure_cour: { tarif: 220000, taxe: 2500 },
+      suite_superieure_piscine: { tarif: 220000, taxe: 2500 },
+      suite_presidentielle: { tarif: 320000, taxe: 2500 },
+      personne_supplementaire: { tarif: 20000, taxe: 2500 },
+    },
+    societe: {
+      classique_eco: { tarif: 98000, taxe: 1500 },
+      classique_vue_cour: { tarif: 114000, taxe: 2500 },
+      superieure_balcon: { tarif: 165000, taxe: 2500 },
+      suite_junior_piscine: { tarif: 175000, taxe: 2500 },
+      suite_superieure_cour: { tarif: 195000, taxe: 2500 },
+      suite_superieure_piscine: { tarif: 195000, taxe: 2500 },
+      suite_presidentielle: { tarif: 300000, taxe: 2500 },
+      personne_supplementaire: { tarif: 15000, taxe: 2500 },
+    },
+    tour_operator: {
+      classique_eco: { tarif: 98000, taxe: 1500 },
+      classique_vue_cour: { tarif: 114000, taxe: 2500 },
+      superieure_balcon: { tarif: 165000, taxe: 2500 },
+      suite_junior_piscine: { tarif: 175000, taxe: 2500 },
+      suite_superieure_cour: { tarif: 195000, taxe: 2500 },
+      suite_superieure_piscine: { tarif: 195000, taxe: 2500 },
+      suite_presidentielle: { tarif: 300000, taxe: 2500 },
+      personne_supplementaire: { tarif: 15000, taxe: 2500 },
+      enfants_moins_10_ans_offert: true,
+    },
+  },
+  evenements: {
+    formules: [
+      {
+        types: ['anniversaire', 'autre'],
+        nom: 'Cocktail dînatoire — Formule 1',
+        tarif_personne: 32500,
+        tarif_enfant: 0,
+        is_forfait: false,
+        description:
+          "Apéritifs (Whisky, Martini blanc et rouge, Suze), jus de fruits frais, bières, sodas, eaux plates et gazeuses // Verrine de gaspacho, Verrine de Salade Thaï végétarienne, Verrine de crème d'Avocat et bâtonnets de Carottes, Bruschetta de Tomates et Fromage Peulh, Soleil feuilleté, Mini burger de Banane plantain, Gambas snackée et chutney de mangue, Mini brochettes façon Poulet DG, Verrine de Pana Cotta et coulis de Bissap, Mini fondant au Chocolat, Compotée d'Ananas-Mangue-Fruits de la Passion",
+      },
+      {
+        types: ['anniversaire', 'autre'],
+        nom: 'Cocktail dînatoire — Formule 2',
+        tarif_personne: 27500,
+        tarif_enfant: 0,
+        is_forfait: false,
+        description:
+          "Apéritifs (Whisky, Martini blanc et rouge, Suze), jus de fruits frais, bières, sodas, eaux plates et gazeuses // Bruschettas tomates mozzarella et basilic frais, Mini gougères, Mini-Pizza, Mini-Quiches Lorraine, Mini roulés aux légumes, Verrines d'avocat aux crevettes, Mini rouleaux de printemps aux crevettes, Nems au poulet, Accras de poisson et sa sauce aigre-douce, Verrines de salade de quinoa, Mini brochettes de bœuf au saté, Mini brochettes de poisson, Mini cakes aux agrumes, Mini fondants au chocolat, Mini brochettes de fruits",
+      },
+      {
+        types: ['anniversaire', 'autre'],
+        nom: 'Cocktail dînatoire — Formule 3',
+        tarif_personne: 21500,
+        tarif_enfant: 0,
+        is_forfait: false,
+        description:
+          "Apéritifs (Whisky, Martini blanc et rouge, Suze), jus de fruits frais, bières, sodas, eaux plates et gazeuses // Bruschettas tomates mozzarella et basilic frais, Mini gougères, Mini-Pizza, Mini-Quiches Lorraine, Verrines d'avocat aux crevettes, Nems au poulet aux crevettes, Accras de poisson et sa sauce aigre-douce, Verrines de salade de quinoa, Mini brochettes de bœuf au saté, Mini cakes aux agrumes, Mini fondants au chocolat",
+      },
+      {
+        types: ['anniversaire', 'autre'],
+        nom: 'Cocktail dînatoire — Formule 4',
+        tarif_personne: 18500,
+        tarif_enfant: 0,
+        is_forfait: false,
+        description:
+          "Apéritifs (Whisky, Martini blanc et rouge, Suze), bières, sodas, eaux plates et gazeuses // Bruschettas tomates mozzarella et basilic frais, Mini gougères, Mini-Pizza, Mini-Quiches Lorraine, Nems au poulet, Accras de poisson et sa sauce aigre-douce, Verrines de salade de quinoa, Mini brochettes de bœuf au saté, Mini cakes aux agrumes",
+      },
+      {
+        types: ['autre'],
+        nom: 'Pause café',
+        tarif_personne: 5000,
+        tarif_enfant: 0,
+        is_forfait: false,
+        description: 'Jus de fruits locaux, Café, Thé, Viennoiseries',
+      },
+      {
+        types: ['autre'],
+        nom: 'Pause café améliorée',
+        tarif_personne: 7500,
+        tarif_enfant: 0,
+        is_forfait: false,
+        description: 'Jus de fruits locaux, Café, Thé, Viennoiseries, Eau Minérale, Mini sandwich au fromage et charcuterie sans porc',
+      },
+      {
+        types: ['brunch', 'dejeuner', 'diner', 'anniversaire', 'autre'],
+        nom: 'Location espace privé',
+        tarif_personne: 450000,
+        tarif_enfant: 0,
+        is_forfait: true,
+        description: 'Location de l’espace privé pour la durée de l’événement (forfait, indépendant du nombre de personnes)',
+      },
+      {
+        types: ['dejeuner', 'diner'],
+        nom: "Déjeuner ou dîner — Service à l'assiette",
+        tarif_personne: 28500,
+        tarif_enfant: 0,
+        is_forfait: false,
+        description: '',
+      },
+      {
+        types: ['dejeuner', 'diner'],
+        nom: 'Déjeuner ou dîner — Service buffet',
+        tarif_personne: 32500,
+        tarif_enfant: 0,
+        is_forfait: false,
+        description: '',
+      },
+    ],
+  },
+};
+
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function mergeSettings(defaults, stored) {
+  const merged = deepClone(defaults);
+  if (!stored || typeof stored !== 'object') return merged;
+  if (stored.hotel) Object.assign(merged.hotel, stored.hotel);
+  if (stored.finance) Object.assign(merged.finance, stored.finance);
+  if (Array.isArray(stored.agents) && stored.agents.length) merged.agents = stored.agents;
+  if (stored.chambres) {
+    ['public', 'societe', 'tour_operator'].forEach((g) => {
+      if (stored.chambres[g]) merged.chambres[g] = { ...merged.chambres[g], ...stored.chambres[g] };
+    });
+  }
+  if (stored.evenements && Array.isArray(stored.evenements.formules)) {
+    merged.evenements.formules = stored.evenements.formules;
+  }
+  return merged;
+}
+
+let SETTINGS = deepClone(DEFAULT_SETTINGS);
+let RATES = {};
+let HOTEL_INFOS = {};
+let PROFORMA_VAT_RATE = 0.18;
+let PROFORMA_USD_RATE = 550;
+let PROFORMA_EUR_RATE = 655.95;
+let AGENT_PRENOMS = {};
+
+function buildRegimeRatesForGrille(grilleSettings, vatRate) {
+  const ttc = {};
+  const ht = {};
+  Object.keys(grilleSettings || {}).forEach((key) => {
+    if (key === 'enfants_moins_10_ans_offert') return;
+    const entry = grilleSettings[key] || { tarif: 0, taxe: 0 };
+    ttc[key] = { tarif: entry.tarif, taxe: entry.taxe };
+    ht[key] = { tarif: Math.round(entry.tarif / (1 + vatRate)), taxe: entry.taxe };
+  });
+  return { ttc, ht, enfants_moins_10_ans_offert: !!(grilleSettings && grilleSettings.enfants_moins_10_ans_offert) };
+}
+
+function rebuildDerivedRates() {
+  const vat = (SETTINGS.finance.tva_pct || 0) / 100;
+  const newRates = {};
+  ['public', 'societe', 'tour_operator'].forEach((grille) => {
+    const built = buildRegimeRatesForGrille(SETTINGS.chambres[grille], vat);
+    newRates[grille] = { ttc: built.ttc, ht: built.ht };
+    if (built.enfants_moins_10_ans_offert) newRates[grille].enfants_moins_10_ans_offert = true;
+  });
+  RATES = newRates;
+}
+
+function applySettings() {
+  HOTEL_INFOS = { ...SETTINGS.hotel };
+  PROFORMA_VAT_RATE = (SETTINGS.finance.tva_pct || 0) / 100;
+  PROFORMA_USD_RATE = SETTINGS.finance.taux_usd || 1;
+  PROFORMA_EUR_RATE = SETTINGS.finance.taux_eur || 1;
+
+  AGENT_PRENOMS = {};
+  (SETTINGS.agents || []).forEach((a) => {
+    if (a.code) AGENT_PRENOMS[a.code] = a.prenom;
+  });
+
+  rebuildDerivedRates();
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    SETTINGS = raw ? mergeSettings(DEFAULT_SETTINGS, JSON.parse(raw)) : deepClone(DEFAULT_SETTINGS);
+  } catch (e) {
+    console.error('Erreur de lecture des paramètres', e);
+    SETTINGS = deepClone(DEFAULT_SETTINGS);
+  }
+  applySettings();
+}
+
+const GRILLE_LABELS = {
+  public: 'Tarif public',
+  societe: 'Tarif société',
+  tour_operator: 'Tarif tour opérateur',
+};
+
+
+/**
+ * Génère le commentaire de réservation au format court utilisé en interne,
+ * ex: ARN//RESA MAIL DU 10.04.2026//CLASS DU 11 AU 13 MAI 2026//99 000 FCFA + 1 500 FCFA//NAVT EN ATT//HEBERGEE PAIE TOUT//
+ */
+
+const CANAL_LABELS = {
+  mail: 'MAIL',
+  whatsapp: 'WHATSAPP',
+  tel: 'TEL',
+  siteminder: 'VIA SITEMINDER',
+  appel: 'APPEL',
+};
+
+function parseNombre(v) {
+  if (v === null || v === undefined) return 0;
+  const n = String(v).replace(/[^\d]/g, '');
+  return n ? parseInt(n, 10) : 0;
+}
+
+const MOIS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+/**
+ * Convertit une date au format ISO (YYYY-MM-DD, issue d'un <input type="date">)
+ * en texte français lisible, ex: "09 avril 2026".
+ */
+function formatDateFr(isoDate) {
+  if (!isoDate) return '';
+  const [y, m, d] = isoDate.split('-').map(Number);
+  if (!y || !m || !d) return isoDate;
+  return `${String(d).padStart(2, '0')} ${MOIS_FR[m - 1]} ${y}`;
+}
+
+/**
+ * Calcule le nombre de nuits entre deux dates ISO (YYYY-MM-DD).
+ * Retourne 0 si les dates sont invalides ou si le départ n'est pas après l'arrivée.
+ */
+function computeNights(isoArrivee, isoDepart) {
+  if (!isoArrivee || !isoDepart) return 0;
+  const arrivee = new Date(isoArrivee + 'T00:00:00');
+  const depart = new Date(isoDepart + 'T00:00:00');
+  const diffMs = depart - arrivee;
+  const nights = Math.round(diffMs / (1000 * 60 * 60 * 24));
+  return nights > 0 ? nights : 0;
+}
+
+/**
+ * Calcule le détail financier d'une chambre :
+ * - nuitée de base (occupation standard = 1 personne)
+ * - supplément pour personne(s) additionnelle(s), par nuit
+ * - taxe de séjour = tarif unitaire x nb personnes x nb nuits
+ */
+function computeRoomTotals(room) {
+  const nbNuits = parseNombre(room.nb_nuits) || computeNights(room.date_arrivee, room.date_depart) || 1;
+  const nbPersonnes = parseNombre(room.nb_personnes) || 1;
+  const nbEnfantsMoins10 = Math.min(parseNombre(room.nb_enfants_moins_10), Math.max(0, nbPersonnes - 1));
+  const tarifBase = parseNombre(room.tarif);
+  const tarifSupp = parseNombre(room.tarif_supp);
+  const taxeUnitaire = parseNombre(room.taxe);
+
+  const personnesSupplementaires = Math.max(0, nbPersonnes - 1 - nbEnfantsMoins10); // les enfants -10 ans ne paient pas le supplément
+
+  const totalNuitee = tarifBase * nbNuits;
+  const totalSupplement = tarifSupp * personnesSupplementaires * nbNuits;
+  const totalTaxe = taxeUnitaire * nbPersonnes * nbNuits; // la taxe de séjour s'applique à tout le monde, enfants inclus
+  const totalChambre = totalNuitee + totalSupplement + totalTaxe;
+
+  return {
+    nbNuits,
+    nbPersonnes,
+    nbEnfantsMoins10,
+    personnesSupplementaires,
+    tarifBase,
+    tarifSupp,
+    taxeUnitaire,
+    totalNuitee,
+    totalSupplement,
+    totalTaxe,
+    totalChambre,
+  };
+}
+
+function formatRoomDateSegment(r) {
+  let s = `${getRoomAbbreviation(r.type_chambre)} DU ${formatDateFr(r.date_arrivee) || '?'} AU ${formatDateFr(r.date_depart) || '?'}`;
+  return s;
+}
+
+function formatRoomTarifSegment(r) {
+  const t = computeRoomTotals(r);
+  const chambreEtSupp = t.totalNuitee + t.totalSupplement;
+  let seg = `${chambreEtSupp.toLocaleString('fr-FR')} FCFA`;
+  if (t.totalTaxe) seg += ` + ${t.totalTaxe.toLocaleString('fr-FR')} FCFA TAXE`;
+  if (t.nbEnfantsMoins10 > 0) seg += ` (dont ${t.nbEnfantsMoins10} enfant(s) -10 ans gratuit supp.)`;
+  return seg;
+}
+
+/**
+ * Construit la ligne de commentaire pour UNE chambre, en reprenant les
+ * informations communes à la réservation (agent, canal, navette, garantie...).
+ */
+function generateCommentForRoom(data, room) {
+  const segments = [];
+
+  segments.push(data.agent || 'ARN');
+
+  const canalLabel = CANAL_LABELS[data.canal] || (data.canal || '').toUpperCase();
+  if (canalLabel || data.date_demande) {
+    let s = `RESA ${canalLabel}`.trim();
+    if (data.date_demande) s += ` DU ${data.date_demande}`;
+    segments.push(s);
+  }
+
+  let roomSeg = formatRoomDateSegment(room);
+  if (data.late_checkout) {
+    roomSeg += data.late_checkout_detail ? ` + LATE CHECK OUT (${data.late_checkout_detail})` : ' + LATE CHECK OUT';
+  }
+  segments.push(roomSeg);
+
+  segments.push(formatRoomTarifSegment(room));
+
+  if (data.navette_statut === 'confirmee' && (data.navette_vol_arrivee || data.navette_vol_depart)) {
+    let s = '';
+    if (data.navette_vol_arrivee) s += `NAVT ARR ${data.navette_vol_arrivee}`;
+    if (data.navette_vol_depart) s += (s ? ' - ' : '') + `NAVT DEP ${data.navette_vol_depart}`;
+    segments.push(s);
+  } else if (data.navette_statut === 'non_souhaitee') {
+    segments.push('NAVT NON SOUHAITEE');
+  } else {
+    segments.push('NAVT EN ATT');
+  }
+
+  if (data.garantie_statut === 'recue') {
+    segments.push(`GARANTIE OK${data.garantie_mode ? ' (' + data.garantie_mode.toUpperCase() + ')' : ''}`);
+  } else {
+    segments.push('GARANTIE EN ATT');
+  }
+
+  if (data.bon_de_commande_requis) {
+    if (data.bon_de_commande_statut === 'recu') segments.push('BDC RECU');
+    else if (data.bon_de_commande_statut === 'mail_fait_office') segments.push('MAIL FAIT OFFICE DE BDC');
+    else segments.push('BDC EN ATT');
+  }
+
+  if (data.rooming_list_requise) {
+    segments.push(data.rooming_list_statut === 'recue' ? 'ROOMING LIST RECUE' : 'ROOMING LIST EN ATT');
+  }
+
+  if (data.paie_ttc_ou_ht === 'a_confirmer') {
+    segments.push('PAIE TTC OU HT ???');
+  } else if (data.paie_ttc_ou_ht) {
+    segments.push(`PAIE ${data.paie_ttc_ou_ht.toUpperCase()}`);
+  }
+
+  if (data.prise_en_charge === 'societe_paie_tout') {
+    segments.push('HEBERGEE PAIE TOUT');
+  } else if (data.prise_en_charge === 'client_paie_extras') {
+    segments.push('CLIENT PAIE EXTRAS');
+  } else if (data.prise_en_charge === 'a_confirmer') {
+    segments.push('PRISE EN CHARGE A CONFIRMER');
+  }
+
+  if (room.responsable_paiement) segments.push(room.responsable_paiement.toUpperCase());
+  if (room.numero_reservation) segments.push(`N° RESA ${room.numero_reservation}`);
+  if (data.notes_libres) segments.push(data.notes_libres.toUpperCase());
+
+  return segments.filter(Boolean).join('//') + '//';
+}
+
+/**
+ * Calcule le segment tarif d'une prestation événement, en tenant compte
+ * du cas "forfait fixe" (indépendant du nombre de personnes).
+ */
+function formatPrestationTarifSegment(p) {
+  const tarifP = parseNombre(p.tarif_personne);
+  if (!tarifP) return '';
+  if (p.is_forfait) {
+    return `${formatNombre(tarifP)} FCFA (FORFAIT)`;
+  }
+  const tarifEnfant = parseNombre(p.tarif_enfant);
+  const nb = parseNombre(p.nb_personnes) || 1;
+  const nbEnfants = Math.min(parseNombre(p.nb_enfants_moins_10), Math.max(0, nb - 1));
+  const nbAdultes = Math.max(0, nb - nbEnfants);
+  let total = tarifP * nbAdultes;
+  let seg = `${formatNombre(tarifP)} FCFA/PERS X ${nbAdultes}`;
+  if (nbEnfants > 0 && tarifEnfant) {
+    total += tarifEnfant * nbEnfants;
+    seg += ` + ${formatNombre(tarifEnfant)} FCFA/ENFANT X ${nbEnfants}`;
+  }
+  seg += ` = ${formatNombre(total)} FCFA`;
+  return seg;
+}
+
+/**
+ * Construit la ligne de commentaire pour UNE prestation événement, en reprenant
+ * les informations communes à la réservation (agent, canal, garantie...) —
+ * miroir de generateCommentForRoom mais pour les prestations (brunch, cocktail...).
+ */
+function generateCommentForPrestation(data, p) {
+  const segments = [];
+
+  segments.push(data.agent || 'ARN');
+
+  const canalLabel = CANAL_LABELS[data.canal] || (data.canal || '').toUpperCase();
+  if (canalLabel || data.date_demande) {
+    let s = `RESA ${canalLabel}`.trim();
+    if (data.date_demande) s += ` DU ${data.date_demande}`;
+    segments.push(s);
+  }
+
+  const typeLabel = EVENT_TYPE_LABELS[p.type_evenement] || 'EVENEMENT';
+  let evSeg = `${typeLabel} DU ${formatDateFr(p.date_evenement) || '?'}`;
+  if (p.heure) evSeg += ` A ${p.heure}`;
+  segments.push(evSeg);
+
+  if (p.lieu) segments.push(EVENT_LIEU_LABELS[p.lieu] || p.lieu.toUpperCase());
+  if (p.nom_formule) segments.push(p.nom_formule.toUpperCase());
+
+  const nb = parseNombre(p.nb_personnes) || 1;
+  const nbEnfants = Math.min(parseNombre(p.nb_enfants_moins_10), Math.max(0, nb - 1));
+  segments.push(`${nb} PERSONNE${nb > 1 ? 'S' : ''}${nbEnfants > 0 ? ` (DONT ${nbEnfants} ENFANT(S) -10 ANS)` : ''}`);
+
+  const tarifSeg = formatPrestationTarifSegment(p);
+  if (tarifSeg) segments.push(tarifSeg);
+
+  if (data.garantie_statut === 'recue') {
+    segments.push(`GARANTIE OK${data.garantie_mode ? ' (' + data.garantie_mode.toUpperCase() + ')' : ''}`);
+  } else {
+    segments.push('GARANTIE EN ATT');
+  }
+
+  if (data.societe) segments.push(data.societe.toUpperCase());
+  if (p.formule_menu) segments.push(p.formule_menu.toUpperCase());
+  if (data.notes_libres) segments.push(data.notes_libres.toUpperCase());
+
+  return segments.filter(Boolean).join('//') + '//';
+}
+
+/**
+ * Génère un commentaire distinct pour chaque chambre ET chaque prestation
+ * événement de la réservation (une réservation peut n'avoir que des
+ * chambres, que des prestations, ou les deux).
+ */
+function generateComment(data) {
+  const roomComments = (data.rooms || []).map((room) => generateCommentForRoom(data, room));
+  const prestationComments = (data.prestations || []).map((p) => generateCommentForPrestation(data, p));
+  const all = [...roomComments, ...prestationComments];
+  if (all.length === 0) return generateCommentForRoom(data, {});
+  return all.join('\n\n');
+}
+
+/* =========================================================================
+   GÉNÉRATEUR D'EMAIL PAR RÈGLES (sans IA) — assemble des blocs de texte
+   selon les données renseignées, et transforme chaque information
+   manquante en une question polie insérée dans le mail.
+   ========================================================================= */
+
+// AGENT_PRENOMS est désormais construit dynamiquement dans applySettings() (module PARAMÈTRES).
+
+function agentPrenom(agent) {
+  return AGENT_PRENOMS[agent] || agent || 'Arnauld';
+}
+
+function suggestEmailType(data) {
+  if (data.statut === 'no_show') return 'no_show';
+  const hasPrestations = (data.prestations || []).length > 0;
+  const hasDefinedRoom = (data.rooms || []).some((r) => r.tarif);
+  if (hasPrestations && !hasDefinedRoom) return 'evenement';
+  if (!hasDefinedRoom) return 'proposition_disponibilite';
+  return 'confirmation';
+}
+
+function heureDuJour() {
+  const h = new Date().getHours();
+  return h >= 18 || h < 5 ? 'Bonsoir' : 'Bonjour';
+}
+
+function blockSalutation(data) {
+  if (data.nom_client) {
+    return `${heureDuJour()} ${data.civilite || 'Monsieur'} ${data.nom_client},`;
+  }
+  return `${heureDuJour()},`;
+}
+
+function formatNombre(n) {
+  const num = String(n).replace(/[^\d]/g, '');
+  if (!num) return n || '';
+  return Number(num).toLocaleString('fr-FR');
+}
+
+function blockChambresDetail(rooms) {
+  if (!rooms || rooms.length === 0) return '';
+  const blocs = rooms.map((r) => {
+    const t = computeRoomTotals(r);
+    const lignes = [];
+    lignes.push(`- ${r.type_chambre || 'Chambre'}${r.numero_reservation ? ' (n° ' + r.numero_reservation + ')' : ''}, du ${formatDateFr(r.date_arrivee) || '(date à préciser)'} à partir de 13h au ${formatDateFr(r.date_depart) || '(date à préciser)'} à 12h (${t.nbNuits} nuit${t.nbNuits > 1 ? 's' : ''})`);
+    if (t.tarifBase) {
+      lignes.push(`  • Tarif : ${formatNombre(t.tarifBase)} F CFA x ${t.nbNuits} nuit${t.nbNuits > 1 ? 's' : ''} = ${formatNombre(t.totalNuitee)} F CFA`);
+    }
+    if (t.personnesSupplementaires > 0 && t.tarifSupp) {
+      lignes.push(`  • Personne supplémentaire : ${formatNombre(t.tarifSupp)} F CFA x ${t.personnesSupplementaires} personne(s) x ${t.nbNuits} nuit${t.nbNuits > 1 ? 's' : ''} = ${formatNombre(t.totalSupplement)} F CFA`);
+    }
+    if (t.nbEnfantsMoins10 > 0) {
+      lignes.push(`  • Dont ${t.nbEnfantsMoins10} enfant(s) de moins de 10 ans : gratuit(s) sur le supplément (taxe de séjour toujours applicable)`);
+    }
+    if (t.taxeUnitaire) {
+      lignes.push(`  • Taxe de séjour : ${formatNombre(t.taxeUnitaire)} F CFA x ${t.nbPersonnes} personne(s) x ${t.nbNuits} nuit${t.nbNuits > 1 ? 's' : ''} = ${formatNombre(t.totalTaxe)} F CFA`);
+    }
+    if (t.totalChambre) {
+      lignes.push(`  Total pour cette chambre : ${formatNombre(t.totalChambre)} F CFA`);
+    }
+    if (r.responsable_paiement) {
+      lignes.push(`  Règlement : ${r.responsable_paiement}`);
+    }
+    return lignes.join('\n');
+  });
+  return blocs.join('\n\n');
+}
+
+/**
+ * Bloc email détaillant les prestations événement (brunch, cocktail...),
+ * miroir de blockChambresDetail mais pour les prestations.
+ */
+function blockPrestationsDetail(prestations) {
+  if (!prestations || prestations.length === 0) return '';
+  const typeLabelsFr = EVENT_TYPE_LABELS_FR;
+  const blocs = prestations.map((p) => {
+    const lignes = [];
+    const typeLabel = typeLabelsFr[p.type_evenement] || 'événement';
+    const nb = parseNombre(p.nb_personnes) || 1;
+    const nbEnfants = Math.min(parseNombre(p.nb_enfants_moins_10), Math.max(0, nb - 1));
+    const nbAdultes = Math.max(0, nb - nbEnfants);
+    lignes.push(
+      `- ${p.nom_formule || (typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1))}, le ${formatDateFr(p.date_evenement) || '(date à préciser)'}${p.heure ? ' à ' + p.heure : ''}${p.lieu ? ', ' + (EVENT_LIEU_LABELS[p.lieu] || '').toLowerCase() : ''}, pour ${nb} personne${nb > 1 ? 's' : ''}${nbEnfants > 0 ? ` (dont ${nbEnfants} enfant(s) de moins de 10 ans)` : ''}`
+    );
+    if (p.formule_menu) lignes.push(`  • Formule : ${p.formule_menu}`);
+    const tarifP = parseNombre(p.tarif_personne);
+    const tarifEnfant = parseNombre(p.tarif_enfant);
+    if (tarifP) {
+      if (p.is_forfait) {
+        lignes.push(`  • Tarif : ${formatNombre(tarifP)} F CFA (forfait, indépendant du nombre de personnes)`);
+      } else {
+        let total = tarifP * nbAdultes;
+        lignes.push(`  • Tarif : ${formatNombre(tarifP)} F CFA / personne x ${nbAdultes} = ${formatNombre(tarifP * nbAdultes)} F CFA`);
+        if (nbEnfants > 0 && tarifEnfant) {
+          total += tarifEnfant * nbEnfants;
+          lignes.push(`  • Tarif enfant (-10 ans) : ${formatNombre(tarifEnfant)} F CFA x ${nbEnfants} = ${formatNombre(tarifEnfant * nbEnfants)} F CFA`);
+        } else if (nbEnfants > 0) {
+          lignes.push(`  • Enfant(s) de moins de 10 ans : ${nbEnfants} (gratuit)`);
+        }
+        lignes.push(`  Total pour cette prestation : ${formatNombre(total)} F CFA`);
+      }
+    }
+    return lignes.join('\n');
+  });
+  return blocs.join('\n\n');
+}
+
+const INCLUS_STANDARD =
+  "Ce tarif comprend le petit-déjeuner, le goûter, l'accès wifi, le service de conciergerie, l'accès à nos deux piscines et à notre salle de sport ainsi que la navette aéroport à l'arrivée et au départ.";
+
+function blockLateCheckout(data) {
+  if (!data.late_checkout) return '';
+  return `Nous prenons également en compte votre demande de late check-out${data.late_checkout_detail ? ' (' + data.late_checkout_detail + ')' : ''}.`;
+}
+
+function blockNavetteConfirmee(data) {
+  if (data.navette_statut !== 'confirmee') return '';
+  if (!data.navette_vol_arrivee && !data.navette_vol_depart) return '';
+  let s = 'La navette aéroport est confirmée';
+  if (data.navette_vol_arrivee) s += ` pour l'arrivée via le vol ${data.navette_vol_arrivee}`;
+  if (data.navette_vol_depart) s += `${data.navette_vol_arrivee ? ' et' : ' pour'} le départ via le vol ${data.navette_vol_depart}`;
+  return s + '.';
+}
+
+function blockGarantieRecue(data) {
+  if (data.garantie_statut !== 'recue') return '';
+  const modeLabels = {
+    lien_paiement: 'via le lien de paiement sécurisé',
+    preautorisation: 'via la préautorisation de votre carte',
+    especes: 'en espèces',
+    virement: 'par virement bancaire',
+    mobile_money: 'via Mobile Money',
+  };
+  return `Nous accusons bonne réception de votre garantie${data.garantie_mode ? ' ' + modeLabels[data.garantie_mode] : ''}.`;
+}
+
+function blockPriseEnCharge(data) {
+  if (data.prise_en_charge === 'societe_paie_tout') {
+    return `La totalité du séjour sera prise en charge par ${data.societe || 'votre société/institution'}.`;
+  }
+  if (data.prise_en_charge === 'client_paie_extras') {
+    return 'Le règlement des éventuels extras sera à effectuer directement à votre départ.';
+  }
+  return '';
+}
+
+function blockFormuleRepas(data) {
+  if (data.formule_repas === 'demi_pension') return 'Votre séjour inclut la formule demi-pension.';
+  if (data.formule_repas === 'pension_complete') return 'Votre séjour inclut la formule pension complète.';
+  return '';
+}
+
+const CONDITIONS_ANNULATION_TEXTES = {
+  standard_48h:
+    "Nous vous informons que toute annulation doit être effectuée au moins 48 heures avant la date d'arrivée, faute de quoi la première nuitée sera facturée sur le moyen de garantie fourni.",
+  deux_semaines:
+    "Nous vous informons que toute annulation effectuée moins de 2 semaines avant la date d'arrivée entraînera des frais équivalents à une nuitée.",
+  acompte_30:
+    "Un acompte correspondant à 30% du montant total du séjour est requis pour confirmer la réservation. Le solde devra être réglé à la réception de la facture. Toute annulation effectuée jusqu'à 7 jours avant la date d'arrivée est sans frais ; en cas d'annulation à moins de 7 jours avant l'arrivée, une pénalité équivalente à 30% du montant total sera appliquée.",
+};
+
+function blockConditionsAnnulation(data) {
+  if (data.conditions_annulation === 'personnalisee' && data.conditions_annulation_texte) {
+    return data.conditions_annulation_texte;
+  }
+  return CONDITIONS_ANNULATION_TEXTES[data.conditions_annulation] || CONDITIONS_ANNULATION_TEXTES.standard_48h;
+}
+
+const INFOS_PRATIQUES =
+  "PS : Nous tenons à vous informer que Maison Rouge est un petit établissement où nous privilégions un service humain et personnalisé. La même personne qui répond aux emails est également en charge des appels téléphoniques et de l'accueil des clients sur place. Cela peut parfois entraîner de légers délais dans nos réponses, et nous nous en excusons sincèrement. Nous vous remercions pour votre compréhension et votre patience.\n\nLa chambre économique est légèrement différente de la chambre classique. Elle est un peu plus petite, avec une superficie de 18 à 19 m², tandis que les chambres classiques mesurent entre 22 et 25 m². C'est la seule différence entre ces deux catégories.";
+
+function blockInfosPratiques(data) {
+  return data.inclure_infos_pratiques ? INFOS_PRATIQUES : '';
+}
+
+function describeMissingInfo(data) {
+  const missing = [];
+  if (data.navette_statut === 'en_attente') {
+    missing.push("les informations de votre vol (compagnie, numéro et horaire), afin que nous puissions organiser la navette aéroport");
+  }
+  if (data.garantie_statut !== 'recue') {
+    missing.push("le mode de garantie souhaité pour votre réservation (lien de paiement sécurisé, préautorisation carte, espèces à la réception, virement bancaire ou Mobile Money)");
+  }
+  if (data.bon_de_commande_requis && data.bon_de_commande_statut === 'en_attente') {
+    missing.push("le bon de commande correspondant à la facture proforma");
+  }
+  if (data.rooming_list_requise && data.rooming_list_statut !== 'recue') {
+    missing.push("la rooming list (liste des occupants par chambre)");
+  }
+  if (!data.prise_en_charge || data.prise_en_charge === 'a_confirmer') {
+    missing.push("qui prendra en charge les frais du séjour (la société/institution en totalité, ou le client à son départ)");
+  }
+  if (data.paie_ttc_ou_ht === 'a_confirmer') {
+    missing.push("si la facturation doit être établie en TTC ou en HT");
+  }
+  if (data.formule_repas === 'a_proposer') {
+    missing.push("si vous souhaitez ajouter une formule demi-pension ou pension complète à votre séjour");
+  }
+  return missing;
+}
+
+function blockDemandesInfos(missing) {
+  if (missing.length === 0) return '';
+  const intro = missing.length === 1
+    ? 'Afin de finaliser votre réservation, pourriez-vous nous communiquer l\'information suivante :'
+    : 'Afin de finaliser votre réservation, pourriez-vous nous communiquer les éléments suivants :';
+  return intro + '\n' + missing.map((m) => '- ' + m).join('\n');
+}
+
+function blockCloture(data) {
+  return `Nous restons à votre disposition pour toute information complémentaire.\n\nCordialement,\n${agentPrenom(data.agent)}`;
+}
+
+function joinBlocks(blocks) {
+  return blocks.filter((b) => b && b.trim()).join('\n\n');
+}
+
+function blockGrilleTarifs(data) {
+  const grille = data.grille || 'public';
+  const regime = data.regime || 'ttc';
+  const rates = RATES[grille] && RATES[grille][regime];
+  if (!rates) return '';
+
+  const lignes = ROOM_CATEGORIES.map((cat) => {
+    const r = rates[cat.code];
+    if (!r) return '';
+    return `- ${cat.label} : ${formatNombre(r.tarif)} F CFA + ${formatNombre(r.taxe)} F CFA de taxe de séjour`;
+  }).filter(Boolean);
+
+  if (rates.personne_supplementaire) {
+    lignes.push(`- Personne supplémentaire : ${formatNombre(rates.personne_supplementaire.tarif)} F CFA + ${formatNombre(rates.personne_supplementaire.taxe)} F CFA de taxe de séjour`);
+  }
+
+  let texte = lignes.join('\n');
+  if (RATES[grille] && RATES[grille].enfants_moins_10_ans_offert) {
+    texte += '\n\nOffert pour les enfants de moins de 10 ans.';
+  }
+  texte += '\n\n' + INCLUS_STANDARD;
+  return texte;
+}
+
+function generateEmail(data, emailType) {
+  const missing = describeMissingInfo(data);
+
+  if (emailType === 'confirmation') {
+    return joinBlocks([
+      blockSalutation(data),
+      'Nous vous remercions pour votre confiance.',
+      'Nous vous confirmons la réservation suivante :',
+      blockChambresDetail(data.rooms),
+      blockPrestationsDetail(data.prestations),
+      INCLUS_STANDARD,
+      blockLateCheckout(data),
+      blockNavetteConfirmee(data),
+      blockGarantieRecue(data),
+      blockPriseEnCharge(data),
+      blockFormuleRepas(data),
+      blockConditionsAnnulation(data),
+      blockDemandesInfos(missing),
+      blockInfosPratiques(data),
+      blockCloture(data),
+    ]);
+  }
+
+  if (emailType === 'proposition_disponibilite') {
+    return joinBlocks([
+      blockSalutation(data),
+      "Nous vous remercions de l'intérêt porté à Maison Rouge.",
+      'Nous avons le plaisir de vous proposer les disponibilités suivantes pour votre séjour :',
+      blockChambresDetail(data.rooms),
+      blockPrestationsDetail(data.prestations),
+      INCLUS_STANDARD,
+      "N'hésitez pas à nous indiquer votre choix ainsi que toute précision utile afin que nous puissions finaliser votre réservation.",
+      blockDemandesInfos(missing),
+      blockInfosPratiques(data),
+      blockCloture(data),
+    ]);
+  }
+
+  if (emailType === 'evenement') {
+    return joinBlocks([
+      blockSalutation(data),
+      "Nous vous remercions de l'intérêt porté à Maison Rouge.",
+      data.notes_libres ? `Nous notons votre demande concernant : ${data.notes_libres}.` : 'Nous avons bien noté votre demande concernant notre offre événementielle.',
+      blockPrestationsDetail(data.prestations),
+      blockChambresDetail(data.rooms),
+      'Afin de garantir votre réservation, vous pouvez procéder au paiement via un lien de paiement ou en espèces à la réception de l\'hôtel.',
+      blockDemandesInfos(missing),
+      blockInfosPratiques(data),
+      blockCloture(data),
+    ]);
+  }
+
+  if (emailType === 'modification') {
+    return joinBlocks([
+      blockSalutation(data),
+      'Nous vous confirmons la prise en compte de votre demande de modification concernant votre réservation.',
+      'La réservation est donc désormais la suivante :',
+      blockChambresDetail(data.rooms),
+      blockPrestationsDetail(data.prestations),
+      INCLUS_STANDARD,
+      blockLateCheckout(data),
+      blockNavetteConfirmee(data),
+      blockConditionsAnnulation(data),
+      blockDemandesInfos(missing),
+      blockInfosPratiques(data),
+      blockCloture(data),
+    ]);
+  }
+
+  if (emailType === 'no_show') {
+    return joinBlocks([
+      blockSalutation(data),
+      "Nous constatons que votre réservation n'a pas été honorée à la date prévue (no-show).",
+      "Conformément à nos conditions générales de réservation, une nuitée sera facturée sur le moyen de garantie fourni.",
+      data.garantie_mode === 'lien_paiement' ? 'Un lien de paiement vous sera transmis à cet effet.' : '',
+      blockCloture(data),
+    ]);
+  }
+
+  if (emailType === 'envoi_tarifs') {
+    return joinBlocks([
+      blockSalutation(data),
+      "Nous vous remercions pour l'intérêt porté à Maison Rouge.",
+      "Voici les tarifs que nous proposons :",
+      blockGrilleTarifs(data),
+      "N'hésitez pas à nous indiquer la période souhaitée ou toute question complémentaire.",
+      blockInfosPratiques(data),
+      blockCloture(data),
+    ]);
+  }
+
+  if (emailType === 'prise_en_charge') {
+    const destinataire = data.contact_tiers || `${data.civilite || 'Monsieur'} ${data.nom_client || ''}`.trim();
+    return joinBlocks([
+      `${heureDuJour()} ${destinataire},`,
+      "Nous espérons que vous allez bien.",
+      `${data.nom_client || 'Le client'} souhaite bénéficier de ${data.objet_prise_en_charge || 'la prestation suivante : (à préciser)'}. ${data.rooms && data.rooms[0] && data.rooms[0].responsable_paiement ? data.rooms[0].responsable_paiement + ', cependant, ' : ''}nous tenions à confirmer avec vous la prise en charge de cette prestation, étant donné que la réservation a été effectuée par vos soins.`,
+      "Nous vous remercions d'avance pour votre retour.",
+      blockCloture(data),
+    ]);
+  }
+
+  return joinBlocks([blockSalutation(data), '(Type de mail non reconnu)', blockCloture(data)]);
+}
+
+
+/**
+ * GÉNÉRATEUR DE PROFORMA (Excel + PDF), bilingue FR/EN, à partir des données
+ * de la réservation. S'appuie sur SheetJS (XLSX) et jsPDF, chargés via CDN.
+ */
+
+const CONDITIONS_ANNULATION_TEXTES_EN = {
+  standard_48h:
+    'Please note that any cancellation must be made at least 48 hours before the arrival date, otherwise the first night will be charged to the guarantee provided.',
+  deux_semaines:
+    'Please note that any cancellation made less than 2 weeks before the arrival date will incur a fee equivalent to one night.',
+  acompte_30:
+    'A deposit of 30% of the total stay amount is required to confirm the booking. The balance must be paid upon receipt of the invoice. Cancellations made up to 7 days before arrival are free of charge; cancellations made less than 7 days before arrival will incur a penalty equal to 30% of the total amount.',
+};
+
+function blockConditionsAnnulationEn(data) {
+  if (data.conditions_annulation === 'personnalisee' && data.conditions_annulation_texte) {
+    return data.conditions_annulation_texte; // pas de traduction auto disponible pour un texte libre
+  }
+  return CONDITIONS_ANNULATION_TEXTES_EN[data.conditions_annulation] || CONDITIONS_ANNULATION_TEXTES_EN.standard_48h;
+}
+
+// PROFORMA_VAT_RATE, PROFORMA_USD_RATE, PROFORMA_EUR_RATE et HOTEL_INFOS
+// sont désormais définis dynamiquement dans applySettings() (module PARAMÈTRES).
+
+// ===================== NUMÉRO DE RÉFÉRENCE =====================
+function generateProformaNumero(agent) {
+  const today = new Date();
+  const ymd = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+  const key = 'proforma_seq_' + ymd + '_' + (agent || 'ARN');
+  let seq = parseInt(localStorage.getItem(key) || '0', 10) + 1;
+  localStorage.setItem(key, String(seq));
+  return `${agent || 'ARN'}_${ymd}_${String(seq).padStart(2, '0')}`;
+}
+
+// ===================== REGROUPEMENT DES CHAMBRES =====================
+function groupRoomsForProforma(rooms) {
+  const groups = {};
+  (rooms || []).forEach((r) => {
+    const key = [r.type_chambre, r.tarif, r.taxe, r.date_arrivee, r.date_depart, r.nb_personnes, r.nb_enfants_moins_10 || 0].join('|');
+    if (!groups[key]) {
+      groups[key] = { ...r, quantite: 0 };
+    }
+    groups[key].quantite += 1;
+  });
+  return Object.values(groups);
+}
+
+// ===================== MODÈLE DE DONNÉES DE LA PROFORMA =====================
+function buildProformaModel(data) {
+  const groups = groupRoomsForProforma(data.rooms);
+  const regime = data.regime || 'ttc';
+
+  const lignes = [];
+  groups.forEach((g) => {
+    const nights = computeNights(g.date_arrivee, g.date_depart) || parseNombre(g.nb_nuits) || 1;
+    const pu = parseNombre(g.tarif);
+    const taxeUnitaire = parseNombre(g.taxe);
+    const nbPersonnes = parseNombre(g.nb_personnes) || 1;
+    const nbEnfants = Math.min(parseNombre(g.nb_enfants_moins_10), Math.max(0, nbPersonnes - 1));
+    const qty = g.quantite * nights;
+    const total = pu * qty;
+    // La taxe de séjour s'applique à TOUTES les personnes, enfants inclus
+    const taxeLigne = taxeUnitaire * nbPersonnes * qty;
+
+    const categorie = ROOM_CATEGORIES.find((c) => g.type_chambre && g.type_chambre.includes(c.label));
+    const nomFr = (categorie ? categorie.label : g.type_chambre || 'Chambre').toUpperCase();
+    const nomEn = (categorie ? categorie.labelEn : g.type_chambre || 'Room').toUpperCase();
+
+    const descriptionParts = [
+      `${String(g.quantite).padStart(2, '0')} ${nomFr}`,
+      nbPersonnes > 1 ? ` - ${nbPersonnes} personnes${nbEnfants > 0 ? ' dont ' + nbEnfants + ' enfant(s) -10 ans' : ''} -` : ' - Single -',
+      `Du ${formatDateFr(g.date_arrivee) || '?'} au ${formatDateFr(g.date_depart) || '?'}`,
+      `(${g.quantite} chambre${g.quantite > 1 ? 's' : ''} x ${nights} nuitée${nights > 1 ? 's' : ''})`,
+    ];
+
+    lignes.push({
+      descriptionFr: descriptionParts.join('\n'),
+      descriptionEn: `${String(g.quantite).padStart(2, '0')} ${nomEn}${nbPersonnes > 1 ? `\n - ${nbPersonnes} persons${nbEnfants > 0 ? ' incl. ' + nbEnfants + ' child(ren) under 10' : ''} -` : '\n - Single -'}\nFrom ${formatDateFr(g.date_arrivee) || '?'} to ${formatDateFr(g.date_depart) || '?'}\n(${g.quantite} room${g.quantite > 1 ? 's' : ''} x ${nights} night${nights > 1 ? 's' : ''})`,
+      pu,
+      qty,
+      total,
+      taxeLigne,
+    });
+
+    // Personnes supplémentaires payantes (adultes/enfants de 10 ans et plus au-delà de l'occupation de base), enfants -10 ans exclus
+    const personnesSuppPayantes = Math.max(0, nbPersonnes - 1 - nbEnfants);
+    const tarifSupp = parseNombre(g.tarif_supp);
+    if (personnesSuppPayantes > 0 && tarifSupp) {
+      const qtySupp = g.quantite * personnesSuppPayantes * nights;
+      lignes.push({
+        descriptionFr: `Personne supplémentaire — ${categorie ? categorie.label : g.type_chambre || 'chambre'}\n(${g.quantite} chambre${g.quantite > 1 ? 's' : ''} x ${personnesSuppPayantes} pers. supp. x ${nights} nuitée${nights > 1 ? 's' : ''})`,
+        descriptionEn: `Additional person — ${categorie ? categorie.labelEn : g.type_chambre || 'room'}\n(${g.quantite} room${g.quantite > 1 ? 's' : ''} x ${personnesSuppPayantes} add. pers. x ${nights} night${nights > 1 ? 's' : ''})`,
+        pu: tarifSupp,
+        qty: qtySupp,
+        total: tarifSupp * qtySupp,
+        taxeLigne: 0,
+      });
+    }
+
+    // Ligne informative pour les enfants -10 ans : gratuits sur le supplément, mais la taxe de séjour (déjà incluse ci-dessus) s'applique
+    if (nbEnfants > 0) {
+      lignes.push({
+        descriptionFr: `Enfant(s) de moins de 10 ans — ${categorie ? categorie.label : g.type_chambre || 'chambre'}\n(${g.quantite} chambre${g.quantite > 1 ? 's' : ''} x ${nbEnfants} enfant(s) x ${nights} nuitée${nights > 1 ? 's' : ''}) — gratuit, hors taxe de séjour`,
+        descriptionEn: `Child(ren) under 10 — ${categorie ? categorie.labelEn : g.type_chambre || 'room'}\n(${g.quantite} room${g.quantite > 1 ? 's' : ''} x ${nbEnfants} child(ren) x ${nights} night${nights > 1 ? 's' : ''}) — free, excluding tourist tax`,
+        pu: 0,
+        qty: g.quantite * nbEnfants * nights,
+        total: 0,
+        taxeLigne: 0,
+      });
+    }
+  });
+
+  // ----- Lignes de prestations événement (brunch, cocktail, location...) -----
+  (data.prestations || []).forEach((p) => {
+    const tarifP = parseNombre(p.tarif_personne);
+    if (!tarifP) return;
+    const nbPersonnes = parseNombre(p.nb_personnes) || 1;
+    const nbEnfants = Math.min(parseNombre(p.nb_enfants_moins_10), Math.max(0, nbPersonnes - 1));
+    const nbAdultes = Math.max(0, nbPersonnes - nbEnfants);
+    const typeLabelFr = EVENT_TYPE_LABELS_FR[p.type_evenement] || 'événement';
+    const nomFr = (p.nom_formule || typeLabelFr).toUpperCase();
+    const nomEn = (p.nom_formule || typeLabelFr).toUpperCase();
+    const dateSeg = `Le ${formatDateFr(p.date_evenement) || '?'}${p.heure ? ' à ' + p.heure : ''}${p.lieu ? ', ' + (EVENT_LIEU_LABELS[p.lieu] || '') : ''}`;
+    const dateSegEn = `On ${formatDateFr(p.date_evenement) || '?'}${p.heure ? ' at ' + p.heure : ''}${p.lieu ? ', ' + (EVENT_LIEU_LABELS[p.lieu] || '') : ''}`;
+
+    if (p.is_forfait) {
+      lignes.push({
+        descriptionFr: `${nomFr}\n${dateSeg}\n(forfait)`,
+        descriptionEn: `${nomEn}\n${dateSegEn}\n(flat fee)`,
+        pu: tarifP,
+        qty: 1,
+        total: tarifP,
+        taxeLigne: 0,
+      });
+      return;
+    }
+
+    lignes.push({
+      descriptionFr: `${nomFr}\n${dateSeg}\n(${nbAdultes} personne${nbAdultes > 1 ? 's' : ''})`,
+      descriptionEn: `${nomEn}\n${dateSegEn}\n(${nbAdultes} person${nbAdultes > 1 ? 's' : ''})`,
+      pu: tarifP,
+      qty: nbAdultes,
+      total: tarifP * nbAdultes,
+      taxeLigne: 0,
+    });
+
+    const tarifEnfant = parseNombre(p.tarif_enfant);
+    if (nbEnfants > 0 && tarifEnfant) {
+      lignes.push({
+        descriptionFr: `${nomFr} — Enfant(s) de moins de 10 ans\n(${nbEnfants} enfant${nbEnfants > 1 ? 's' : ''})`,
+        descriptionEn: `${nomEn} — Child(ren) under 10\n(${nbEnfants} child${nbEnfants > 1 ? 'ren' : ''})`,
+        pu: tarifEnfant,
+        qty: nbEnfants,
+        total: tarifEnfant * nbEnfants,
+        taxeLigne: 0,
+      });
+    } else if (nbEnfants > 0) {
+      lignes.push({
+        descriptionFr: `${nomFr} — Enfant(s) de moins de 10 ans\n(${nbEnfants} enfant${nbEnfants > 1 ? 's' : ''}) — gratuit`,
+        descriptionEn: `${nomEn} — Child(ren) under 10\n(${nbEnfants} child${nbEnfants > 1 ? 'ren' : ''}) — free`,
+        pu: 0,
+        qty: nbEnfants,
+        total: 0,
+        taxeLigne: 0,
+      });
+    }
+  });
+  const subtotal = lignes.reduce((sum, l) => sum + l.total, 0);
+  const taxesSejour = lignes.reduce((sum, l) => sum + l.taxeLigne, 0);
+
+  let tva, montantHT, totalTTC;
+  if (regime === 'ht') {
+    tva = subtotal * PROFORMA_VAT_RATE;
+    montantHT = subtotal + taxesSejour;
+    totalTTC = subtotal + tva + taxesSejour;
+  } else {
+    tva = (subtotal / (1 + PROFORMA_VAT_RATE)) * PROFORMA_VAT_RATE;
+    montantHT = subtotal - tva + taxesSejour;
+    totalTTC = subtotal + taxesSejour;
+  }
+
+  const arrivees = (data.rooms || []).map((r) => r.date_arrivee).filter(Boolean).sort();
+  const departs = (data.rooms || []).map((r) => r.date_depart).filter(Boolean).sort();
+  const eventDates = (data.prestations || []).map((p) => p.date_evenement).filter(Boolean).sort();
+  const dateArriveeGlobale = arrivees[0] || eventDates[0] || '';
+  const dateDepartGlobale = departs[departs.length - 1] || eventDates[eventDates.length - 1] || '';
+  const nbNuitsGlobal = computeNights(dateArriveeGlobale, dateDepartGlobale) || 1;
+
+  const factureA = data.societe || data.nom_client || '';
+  const client =
+    data.rooming_list_requise && data.rooming_list_statut !== 'recue'
+      ? 'ROOMING LIST EN ATTENTE'
+      : (data.rooms || []).map((r) => r.occupant).filter(Boolean).join(', ') || data.nom_client || '';
+
+  return {
+    numero: generateProformaNumero(data.agent),
+    dateEmission: new Date(),
+    dateArriveeGlobale,
+    dateDepartGlobale,
+    nbNuitsGlobal,
+    factureA,
+    client,
+    lignes,
+    subtotal,
+    taxesSejour,
+    tva,
+    montantHT,
+    totalTTC,
+    totalUSD: totalTTC / PROFORMA_USD_RATE,
+    totalEUR: totalTTC / PROFORMA_EUR_RATE,
+    conditionsAnnulationFr: blockConditionsAnnulation(data),
+    conditionsAnnulationEn: blockConditionsAnnulationEn(data),
+    regime,
+  };
+}
+
+// ===================== GÉNÉRATION EXCEL (SheetJS, formules actives) =====================
+function buildProformaSheet(model, langue) {
+  const isFr = langue === 'fr';
+  const rows = [];
+
+  const push = (row) => rows.push(row);
+
+  push([HOTEL_INFOS.nom, isFr ? 'PROFORMA' : 'INVOICE']);
+  push([`Adresse : ${HOTEL_INFOS.adresse}`]);
+  push([`Site Internet : ${HOTEL_INFOS.site}`]);
+  push([`Téléphone ${HOTEL_INFOS.telephone}`]);
+  push([`RCCM COTONOU No : ${HOTEL_INFOS.rccm}`]);
+  push([`IFU : ${HOTEL_INFOS.ifu}`, null, isFr ? 'DATE :' : 'DATE:', model.dateEmission]);
+  push([null, null, 'N°', model.numero]);
+  push([isFr ? 'DATES DU' : 'DATES OF STAY:', formatDateFr(model.dateArriveeGlobale), isFr ? 'AU' : 'OF', formatDateFr(model.dateDepartGlobale)]);
+  push([isFr ? 'NOMBRE DE NUITEES' : 'NUMBER OF NIGHTS', model.nbNuitsGlobal]);
+  push([isFr ? 'PRISE EN CHARGE' : 'BILLING / PAYMENT BY', model.factureA, isFr ? 'CLIENT :' : 'GUEST :', model.client]);
+  push([isFr ? 'DESIGNATION' : 'DESCRIPTION', null, isFr ? 'PU' : 'UP', isFr ? 'QTE' : 'QTY', isFr ? 'TOTAL' : 'TOTAL']);
+
+  const firstLineRow = rows.length; // index (0-based) de la première ligne d'articles
+  model.lignes.forEach((l) => {
+    push([isFr ? l.descriptionFr : l.descriptionEn, null, l.pu, l.qty, null]); // TOTAL rempli en formule plus bas
+  });
+  const lastLineRow = rows.length - 1;
+
+  push([isFr ? 'TAXES DE SEJOUR' : 'TOURIST TAXES', null, isFr ? 'SOUS TOTAL' : 'SUBTOTAL', null, null]);
+  push([isFr ? 'HORS TVA, TAXES DE SEJOUR COMPRISES' : 'EXCLUDING VAT, TOURIST TAXES INCLUDED', null, isFr ? `DONT TVA ${PROFORMA_VAT_RATE * 100}%` : `INCLUDING ${PROFORMA_VAT_RATE * 100}% VAT`, null, null]);
+  push([null, null, isFr ? 'TOTAL TTC (XOF)' : 'TOTAL INCLUDING VAT (XOF)', null, null]);
+  push([isFr ? 'TOTAL TTC (USD)' : 'TOTAL INCLUDING VAT (USD)', null, isFr ? 'TOTAL TTC (EUR)' : 'TOTAL INCLUDING VAT (EUR)', null, null]);
+  push([]);
+  push([isFr ? model.conditionsAnnulationFr : model.conditionsAnnulationEn]);
+  push([]);
+  push([null, null, null, isFr ? 'LA DIRECTION' : 'MANAGEMENT']);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // --- Formules actives (indices 1-based pour les adresses de cellules) ---
+  const R = (i) => i + 1; // conversion index 0-based -> ligne Excel 1-based
+
+  model.lignes.forEach((l, idx) => {
+    const row = R(firstLineRow + idx);
+    ws['E' + row] = { t: 'n', f: `C${row}*D${row}`, z: '#,##0' };
+  });
+
+  const tousTauxRange = `C${R(firstLineRow)}:C${R(lastLineRow)}`;
+  const taxeRow = R(lastLineRow + 1);
+  const taxeParLigne = model.lignes.map((l, idx) => (l.taxeLigne ? `(${l.taxeLigne / (l.qty || 1)})*D${R(firstLineRow + idx)}` : '0'));
+  ws['B' + taxeRow] = { t: 'n', f: taxeParLigne.join('+'), z: '#,##0' };
+
+  const subtotalRow = taxeRow;
+  ws['E' + subtotalRow] = { t: 'n', f: `SUM(E${R(firstLineRow)}:E${R(lastLineRow)})`, z: '#,##0' };
+
+  const htRow = R(lastLineRow + 2);
+  const vatRow = htRow;
+  if (model.regime === 'ht') {
+    ws['E' + vatRow] = { t: 'n', f: `E${subtotalRow}*${PROFORMA_VAT_RATE}`, z: '#,##0' };
+    ws['B' + htRow] = { t: 'n', f: `E${subtotalRow}+B${taxeRow}`, z: '#,##0' };
+  } else {
+    ws['E' + vatRow] = { t: 'n', f: `E${subtotalRow}/(1+${PROFORMA_VAT_RATE})*${PROFORMA_VAT_RATE}`, z: '#,##0' };
+    ws['B' + htRow] = { t: 'n', f: `E${subtotalRow}-E${vatRow}+B${taxeRow}`, z: '#,##0' };
+  }
+
+  const totalTtcRow = R(lastLineRow + 3);
+  if (model.regime === 'ht') {
+    ws['E' + totalTtcRow] = { t: 'n', f: `E${subtotalRow}+E${vatRow}+B${taxeRow}`, z: '#,##0' };
+  } else {
+    ws['E' + totalTtcRow] = { t: 'n', f: `E${subtotalRow}+B${taxeRow}`, z: '#,##0' };
+  }
+
+  const conversionRow = R(lastLineRow + 4);
+  ws['B' + conversionRow] = { t: 'n', f: `E${totalTtcRow}/${PROFORMA_USD_RATE}`, z: '#,##0.00' };
+  ws['E' + conversionRow] = { t: 'n', f: `E${totalTtcRow}/${PROFORMA_EUR_RATE}`, z: '#,##0.00' };
+
+  ws['!cols'] = [{ wch: 45 }, { wch: 20 }, { wch: 14 }, { wch: 10 }, { wch: 16 }];
+  ws['!merges'] = model.lignes.map((l, idx) => ({ s: { r: firstLineRow + idx, c: 0 }, e: { r: firstLineRow + idx, c: 1 } }));
+
+  return ws;
+}
+
+function generateProformaExcel(data) {
+  const model = buildProformaModel(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, buildProformaSheet(model, 'fr'), 'FRANCAIS');
+  XLSX.utils.book_append_sheet(wb, buildProformaSheet(model, 'en'), 'ANGLAIS');
+  XLSX.writeFile(wb, `Proforma_${model.numero}.xlsx`);
+  return model;
+}
+
+// ===================== GÉNÉRATION PDF (jsPDF, 2 pages FR + EN) =====================
+function drawProformaPage(doc, model, langue) {
+  const isFr = langue === 'fr';
+  const marginX = 15;
+  let y = 18;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const rightX = pageWidth - marginX;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(HOTEL_INFOS.nom, marginX, y);
+  doc.setFontSize(14);
+  doc.text(isFr ? 'PROFORMA' : 'INVOICE', rightX, y, { align: 'right' });
+
+  y += 7;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  [
+    `Adresse : ${HOTEL_INFOS.adresse}`,
+    `Site Internet : ${HOTEL_INFOS.site}`,
+    `Téléphone ${HOTEL_INFOS.telephone}`,
+    `RCCM COTONOU No : ${HOTEL_INFOS.rccm}`,
+    `IFU : ${HOTEL_INFOS.ifu}`,
+  ].forEach((line) => {
+    doc.text(line, marginX, y);
+    y += 4.5;
+  });
+
+  y += 2;
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${isFr ? 'DATE' : 'DATE'} : ${model.dateEmission.toLocaleDateString(isFr ? 'fr-FR' : 'en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}`, marginX, y);
+  doc.text(`N° ${model.numero}`, rightX, y, { align: 'right' });
+
+  y += 8;
+  doc.text(`${isFr ? 'DATES DU' : 'DATES OF STAY'} ${formatDateFr(model.dateArriveeGlobale)} ${isFr ? 'AU' : 'TO'} ${formatDateFr(model.dateDepartGlobale)}  (${model.nbNuitsGlobal} ${isFr ? 'nuitée(s)' : 'night(s)'})`, marginX, y);
+
+  y += 7;
+  doc.text(`${isFr ? 'PRISE EN CHARGE' : 'BILLING / PAYMENT BY'} : `, marginX, y);
+  doc.setFont('helvetica', 'normal');
+  doc.text(model.factureA || '-', marginX + 48, y);
+  y += 5.5;
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${isFr ? 'CLIENT' : 'GUEST'} : `, marginX, y);
+  doc.setFont('helvetica', 'normal');
+  doc.text(model.client || '-', marginX + 48, y);
+
+  y += 9;
+  // --- Tableau des lignes ---
+  const colX = { desc: marginX, pu: rightX - 62, qty: rightX - 32, total: rightX };
+  doc.setFont('helvetica', 'bold');
+  doc.setFillColor(235, 235, 235);
+  doc.rect(marginX, y - 4.5, rightX - marginX, 6.5, 'F');
+  doc.text(isFr ? 'DESIGNATION' : 'DESCRIPTION', colX.desc + 2, y);
+  doc.text(isFr ? 'PU' : 'UP', colX.pu, y);
+  doc.text(isFr ? 'QTE' : 'QTY', colX.qty, y);
+  doc.text('TOTAL', colX.total, y, { align: 'right' });
+  y += 4;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  model.lignes.forEach((l) => {
+    const desc = isFr ? l.descriptionFr : l.descriptionEn;
+    const lines = doc.splitTextToSize(desc, colX.pu - colX.desc - 4);
+    const blockHeight = Math.max(lines.length * 4, 10);
+    doc.text(lines, colX.desc + 2, y);
+    doc.text(formatNombre(l.pu), colX.pu, y);
+    doc.text(String(l.qty), colX.qty, y);
+    doc.text(formatNombre(l.total), colX.total, y, { align: 'right' });
+    y += blockHeight + 2;
+    doc.setDrawColor(220, 220, 220);
+    doc.line(marginX, y - 2, rightX, y - 2);
+  });
+
+  y += 2;
+  doc.setFontSize(9.5);
+  doc.setFont('helvetica', 'bold');
+
+  const totalLine = (label, value, opts) => {
+    doc.text(label, colX.desc, y);
+    doc.text(value, colX.total, y, { align: 'right' });
+    y += 6;
+  };
+
+  totalLine(isFr ? 'TAXES DE SEJOUR' : 'TOURIST TAXES', formatNombre(model.taxesSejour) + ' F CFA');
+  totalLine(isFr ? 'SOUS-TOTAL' : 'SUBTOTAL', formatNombre(model.subtotal) + ' F CFA');
+  totalLine(isFr ? `DONT TVA ${PROFORMA_VAT_RATE * 100}%` : `INCLUDING ${PROFORMA_VAT_RATE * 100}% VAT`, formatNombre(Math.round(model.tva)) + ' F CFA');
+  doc.setFontSize(11);
+  totalLine(isFr ? 'TOTAL TTC (XOF)' : 'TOTAL INCLUDING VAT (XOF)', formatNombre(Math.round(model.totalTTC)) + ' F CFA');
+  doc.setFontSize(9);
+  totalLine(isFr ? 'Équivalent USD' : 'Equivalent USD', '$ ' + model.totalUSD.toFixed(2));
+  totalLine(isFr ? 'Équivalent EUR' : 'Equivalent EUR', '€ ' + model.totalEUR.toFixed(2));
+
+  y += 4;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text(isFr ? 'CONDITIONS :' : 'TERMS & CONDITIONS:', marginX, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  const conditionsText = isFr ? model.conditionsAnnulationFr : model.conditionsAnnulationEn;
+  const condLines = doc.splitTextToSize(conditionsText, rightX - marginX);
+  doc.text(condLines, marginX, y);
+  y += condLines.length * 4 + 12;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text(isFr ? 'LA DIRECTION' : 'MANAGEMENT', rightX, y, { align: 'right' });
+}
+
+function generateProformaPDF(data) {
+  const model = buildProformaModel(data);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  drawProformaPage(doc, model, 'fr');
+  doc.addPage();
+  drawProformaPage(doc, model, 'en');
+
+  doc.save(`Proforma_${model.numero}.pdf`);
+  return model;
+}
+
+// ===================== ÉTAT GLOBAL =====================
+let currentType = 'particulier';
+let editingId = null;
+const STORAGE_KEY = 'maisonrouge_reservations';
+
+// ===================== INIT =====================
+document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+  migrateLegacyEvents();
+  renderSettingsForm();
+  setupSettingsActions();
+  setupTabs();
+  setupTypeSegmented();
+  setupConditionalFields();
+  setupRooms();
+  setupPrestations();
+  setupGrilleAuto();
+  setupEmailGeneration();
+  setupProforma();
+  setupFormSubmit();
+  setupCopyButtons();
+  setupHistory();
+  setupEmailAnalyze();
+  setupCalendar();
+  setupShiftTasks();
+  addRoomRow(); // une chambre par défaut
+  setReservationMode('chambre'); // onglet par défaut au chargement
+});
+
+// ===================== STOCKAGE (localStorage) =====================
+function getAllReservations() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.error('Erreur de lecture du stockage local', e);
+    return [];
+  }
+}
+
+function saveAllReservations(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+function saveReservation(data) {
+  const list = getAllReservations();
+  const now = new Date().toISOString();
+  if (data.id) {
+    const idx = list.findIndex((r) => r.id === data.id);
+    data.updated_at = now;
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...data };
+    } else {
+      list.push(data);
+    }
+  } else {
+    data.id = 'r_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+    data.created_at = now;
+    data.updated_at = now;
+    list.push(data);
+  }
+  saveAllReservations(list);
+  return data;
+}
+
+function getReservation(id) {
+  return getAllReservations().find((r) => r.id === id);
+}
+
+// ===================== MIGRATION v15 : fusion chambre + événement =====================
+// Avant la v15, les événements (brunch, dîner, anniversaire...) étaient enregistrés à part
+// (clé localStorage "maisonrouge_evenements"), séparément des réservations de chambre.
+// Depuis la v15, une réservation unique peut porter à la fois des chambres et des
+// prestations événement — cette fonction migre une seule fois les anciennes données.
+const MIGRATION_V15_FLAG = 'maisonrouge_migration_v15_done';
+
+function migrateLegacyEvents() {
+  try {
+    if (localStorage.getItem(MIGRATION_V15_FLAG)) return;
+
+    const raw = localStorage.getItem(STORAGE_KEY_EVENTS);
+    const legacyEvents = raw ? JSON.parse(raw) : [];
+
+    if (Array.isArray(legacyEvents) && legacyEvents.length > 0) {
+      const reservations = getAllReservations();
+      const existingIds = new Set(reservations.map((r) => r.id));
+
+      legacyEvents.forEach((ev) => {
+        if (!ev || !ev.id || existingIds.has(ev.id)) return; // déjà migré ou invalide
+        reservations.push({
+          id: ev.id,
+          type: 'particulier',
+          agent: ev.e_agent || 'ARN',
+          canal: ev.e_canal || 'mail',
+          date_demande: ev.e_date_demande || '',
+          civilite: ev.e_civilite || 'Monsieur',
+          nom_client: ev.e_nom_client || '',
+          societe: ev.e_societe || '',
+          garantie_statut: ev.e_garantie_statut || 'en_attente',
+          garantie_mode: ev.e_garantie_mode || '',
+          notes_libres: ev.e_notes_libres || '',
+          statut: ev.e_statut || 'option',
+          rooms: [],
+          prestations: [
+            {
+              type_evenement: ev.type || 'autre',
+              nom_formule: ev.e_formule || '',
+              date_evenement: ev.e_date_evenement || '',
+              heure: ev.e_heure || '',
+              lieu: ev.e_lieu || '',
+              nb_personnes: ev.e_nb_personnes || 1,
+              nb_enfants_moins_10: ev.e_nb_enfants || 0,
+              tarif_personne: ev.e_tarif_personne || '',
+              tarif_enfant: ev.e_tarif_enfant || '',
+              is_forfait: false,
+              formule_menu: ev.e_formule_menu || '',
+            },
+          ],
+          email_genere: ev.email_genere || '',
+          commentaire_genere: ev.commentaire_genere || '',
+          created_at: ev.created_at || new Date().toISOString(),
+          updated_at: ev.updated_at || new Date().toISOString(),
+        });
+      });
+
+      saveAllReservations(reservations);
+    }
+
+    localStorage.setItem(MIGRATION_V15_FLAG, '1');
+  } catch (e) {
+    console.error('Erreur lors de la migration v15 des événements', e);
+  }
+}
+
+// ===================== ONGLETS =====================
+function setupTabs() {
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'new' && btn.dataset.mode) setReservationMode(btn.dataset.mode);
+      if (btn.dataset.tab === 'history') loadHistory();
+      if (btn.dataset.tab === 'planning') { renderCalendar(); renderCalendarDayDetail(); }
+      if (btn.dataset.tab === 'tasks') { renderShiftDay(); }
+    });
+  });
+}
+
+// ===================== MODE DE RÉSERVATION (chambre / événement / mixte) =====================
+// Les 3 onglets "Réservation chambre / Réservation événement / Chambre + événement"
+// partagent le même formulaire (#resaForm) et le même stockage — seul l'affichage des
+// cartes Chambre(s) / Prestation(s) change, pour éviter la confusion signalée entre
+// les deux types de lignes tout en gardant une seule logique de génération/proforma.
+let currentReservationMode = 'chambre';
+
+function setReservationMode(mode) {
+  currentReservationMode = mode;
+  const roomsCard = document.getElementById('roomsCard');
+  const prestationsCard = document.getElementById('prestationsCard');
+  const lateCheckoutCard = document.getElementById('lateCheckoutCard');
+  const navetteCard = document.getElementById('navetteCard');
+  const showRooms = mode === 'chambre' || mode === 'mixte';
+  const showPrestations = mode === 'evenement' || mode === 'mixte';
+
+  roomsCard.style.display = showRooms ? '' : 'none';
+  prestationsCard.style.display = showPrestations ? '' : 'none';
+  // Late check-out et navette aéroport ne concernent que les séjours en chambre,
+  // pas les réservations événement seules (brunch, cocktail...).
+  lateCheckoutCard.style.display = showRooms ? '' : 'none';
+  navetteCard.style.display = showRooms ? '' : 'none';
+
+  // Retirer les lignes vides du bloc masqué, pour éviter qu'une chambre ou une
+  // prestation totalement vierge (ex: la ligne par défaut au chargement) ne
+  // génère un segment fantôme (ex: "NAVT EN ATT") dans une réservation événement
+  // pure, ou inversement. Les lignes contenant de vraies données sont conservées
+  // (juste masquées) et signalées via updateHiddenDataHint().
+  if (!showRooms) {
+    document.querySelectorAll('#roomsList .room-row').forEach((row) => {
+      if (isRoomRowBlank(row)) row.remove();
+    });
+  }
+  if (!showPrestations) {
+    document.querySelectorAll('#prestationsList .room-row').forEach((row) => {
+      if (isPrestationRowBlank(row)) row.remove();
+    });
+  }
+
+  // Garantir au moins une ligne visible dans la (les) carte(s) affichée(s)
+  if (showRooms && document.querySelectorAll('#roomsList .room-row').length === 0) addRoomRow();
+  if (showPrestations && document.querySelectorAll('#prestationsList .room-row').length === 0) addPrestationRow();
+
+  updateHiddenDataHint();
+  scheduleCommentUpdate();
+}
+
+function isRoomRowBlank(row) {
+  return (
+    !row.querySelector('.r-type-select').value &&
+    !row.querySelector('.r-arrivee').value &&
+    !row.querySelector('.r-depart').value &&
+    !row.querySelector('.r-tarif').value
+  );
+}
+
+function isPrestationRowBlank(row) {
+  return (
+    !row.querySelector('.p-date').value &&
+    !row.querySelector('.p-tarif').value &&
+    !row.querySelector('.p-formule-select').value
+  );
+}
+
+/**
+ * Avertit si des chambres ou des prestations sont saisies mais masquées par
+ * l'onglet courant (ex: prestation ajoutée puis retour sur l'onglet "Chambre"),
+ * pour éviter qu'elles restent invisibles sans que l'utilisateur le sache —
+ * elles restent néanmoins incluses dans le commentaire/email/proforma.
+ */
+function updateHiddenDataHint() {
+  const hint = document.getElementById('hiddenDataHint');
+  const hasRooms = Array.from(document.querySelectorAll('#roomsList .room-row')).some((row) => !isRoomRowBlank(row));
+  const hasPrestations = Array.from(document.querySelectorAll('#prestationsList .room-row')).some((row) => !isPrestationRowBlank(row));
+
+  if (currentReservationMode === 'chambre' && hasPrestations) {
+    hint.textContent = "ℹ️ Cette réservation contient aussi des prestations événement, masquées sur cet onglet — voir l'onglet « Chambre + événement ».";
+    hint.style.display = 'block';
+  } else if (currentReservationMode === 'evenement' && hasRooms) {
+    hint.textContent = "ℹ️ Cette réservation contient aussi des chambres, masquées sur cet onglet — voir l'onglet « Chambre + événement ».";
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+// ===================== TYPE DE CLIENT =====================
+function setupTypeSegmented() {
+  document.querySelectorAll('#typeSegmented .seg-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#typeSegmented .seg-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentType = btn.dataset.value;
+      document.getElementById('institutionCard').style.display = currentType === 'institution' ? 'block' : 'none';
+      document.getElementById('groupeCard').style.display = (currentType === 'groupe' || currentType === 'institution') ? 'block' : 'none';
+
+      const grilleSelect = document.getElementById('grilleSelect');
+      if (currentType === 'institution') grilleSelect.value = 'societe';
+      else if (currentType === 'groupe') grilleSelect.value = 'tour_operator';
+      else grilleSelect.value = 'public';
+      reapplyAllRoomRates();
+      updateComment();
+    });
+  });
+}
+
+// ===================== CHAMPS CONDITIONNELS =====================
+function setupConditionalFields() {
+  const bdcCheckbox = document.querySelector('[name="bon_de_commande_requis"]');
+  bdcCheckbox.addEventListener('change', () => {
+    document.getElementById('bdcStatutWrap').style.display = bdcCheckbox.checked ? 'block' : 'none';
+  });
+
+  const roomingCheckbox = document.querySelector('[name="rooming_list_requise"]');
+  roomingCheckbox.addEventListener('change', () => {
+    document.getElementById('roomingStatutWrap').style.display = roomingCheckbox.checked ? 'block' : 'none';
+  });
+
+  const navetteStatut = document.getElementById('navetteStatut');
+  navetteStatut.addEventListener('change', () => {
+    document.getElementById('navetteVolsWrap').style.display = navetteStatut.value === 'confirmee' ? 'grid' : 'none';
+  });
+
+  const conditionsSelect = document.getElementById('conditionsAnnulationSelect');
+  conditionsSelect.addEventListener('change', () => {
+    document.getElementById('conditionsAnnulationTexteWrap').style.display = conditionsSelect.value === 'personnalisee' ? 'block' : 'none';
+  });
+}
+
+// ===================== GRILLE TARIFAIRE =====================
+function setupGrilleAuto() {
+  document.getElementById('grilleSelect').addEventListener('change', reapplyAllRoomRates);
+  document.getElementById('regimeSelect').addEventListener('change', reapplyAllRoomRates);
+}
+
+function reapplyAllRoomRates() {
+  document.querySelectorAll('#roomsList .room-row').forEach((row) => applyRateToRoomRow(row));
+  scheduleCommentUpdate();
+}
+
+function applyRateToRoomRow(row) {
+  const select = row.querySelector('.r-type-select');
+  const code = select.value;
+  if (!code) return;
+  const grille = document.getElementById('grilleSelect').value;
+  const regime = document.getElementById('regimeSelect').value;
+  const rate = RATES?.[grille]?.[regime]?.[code];
+  const suppRate = RATES?.[grille]?.[regime]?.personne_supplementaire;
+  if (rate) {
+    row.querySelector('.r-tarif').value = rate.tarif.toLocaleString('fr-FR');
+    row.querySelector('.r-taxe').value = rate.taxe.toLocaleString('fr-FR');
+  }
+  if (suppRate) {
+    row.querySelector('.r-supp').value = suppRate.tarif;
+  }
+  const label = select.options[select.selectedIndex]?.text || '';
+  row.querySelector('.r-type').value = label;
+}
+
+// ===================== CHAMBRES DYNAMIQUES =====================
+function setupRooms() {
+  document.getElementById('addRoomBtn').addEventListener('click', () => addRoomRow());
+}
+
+function addRoomRow(data) {
+  const template = document.getElementById('roomRowTemplate');
+  const clone = template.content.cloneNode(true);
+  const row = clone.querySelector('.room-row');
+
+  const select = row.querySelector('.r-type-select');
+  select.innerHTML =
+    '<option value="">— Choisir une catégorie —</option>' +
+    ROOM_CATEGORIES.map((c) => `<option value="${c.code}">${c.label}${c.numero ? ' (' + c.numero + ')' : ''}</option>`).join('');
+
+  if (data) {
+    row.querySelector('.r-type').value = data.type_chambre || '';
+    const match = ROOM_CATEGORIES.find((c) => data.type_chambre && data.type_chambre.includes(c.label));
+    if (match) select.value = match.code;
+    row.querySelector('.r-occupant').value = data.occupant || '';
+    row.querySelector('.r-arrivee').value = data.date_arrivee || '';
+    row.querySelector('.r-depart').value = data.date_depart || '';
+    row.querySelector('.r-nuits').value = data.nb_nuits || 1;
+    row.querySelector('.r-tarif').value = data.tarif || '';
+    row.querySelector('.r-taxe').value = data.taxe || '';
+    row.querySelector('.r-supp').value = data.tarif_supp || '';
+    row.querySelector('.r-personnes').value = data.nb_personnes || 1;
+    row.querySelector('.r-enfants').value = data.nb_enfants_moins_10 || 0;
+    row.querySelector('.r-numero').value = data.numero_reservation || '';
+    row.querySelector('.r-responsable').value = data.responsable_paiement || '';
+  }
+
+  select.addEventListener('change', () => {
+    applyRateToRoomRow(row);
+    scheduleCommentUpdate();
+  });
+
+  const updateNights = () => {
+    const nights = computeNights(row.querySelector('.r-arrivee').value, row.querySelector('.r-depart').value);
+    row.querySelector('.r-nuits').value = nights || 1;
+    scheduleCommentUpdate();
+  };
+  row.querySelector('.r-arrivee').addEventListener('change', updateNights);
+  row.querySelector('.r-depart').addEventListener('change', updateNights);
+
+  row.querySelector('.btn-remove-room').addEventListener('click', () => {
+    row.remove();
+    scheduleCommentUpdate();
+  });
+  document.getElementById('roomsList').appendChild(row);
+}
+
+function collectRooms() {
+  return Array.from(document.querySelectorAll('#roomsList .room-row')).map((row) => ({
+    type_chambre: row.querySelector('.r-type').value,
+    occupant: row.querySelector('.r-occupant').value,
+    date_arrivee: row.querySelector('.r-arrivee').value,
+    date_depart: row.querySelector('.r-depart').value,
+    nb_nuits: row.querySelector('.r-nuits').value,
+    tarif: row.querySelector('.r-tarif').value,
+    taxe: row.querySelector('.r-taxe').value,
+    tarif_supp: row.querySelector('.r-supp').value,
+    nb_personnes: row.querySelector('.r-personnes').value,
+    nb_enfants_moins_10: row.querySelector('.r-enfants').value,
+    numero_reservation: row.querySelector('.r-numero').value,
+    responsable_paiement: row.querySelector('.r-responsable').value,
+  }));
+}
+
+// ===================== PRESTATIONS ÉVÉNEMENT DYNAMIQUES =====================
+function setupPrestations() {
+  document.getElementById('addPrestationBtn').addEventListener('click', () => addPrestationRow());
+}
+
+function populatePrestationFormuleSelect(row) {
+  const typeSelect = row.querySelector('.p-type-select');
+  const formuleSelect = row.querySelector('.p-formule-select');
+  const formules = getFormulesForType(typeSelect.value);
+  const currentValue = formuleSelect.value;
+  formuleSelect.innerHTML =
+    '<option value="">— Aucune / personnalisée —</option>' +
+    formules
+      .map(
+        (f) =>
+          `<option value="${escapeAttr(f.nom)}">${escapeAttr(f.nom)} — ${formatNombre(f.tarif_personne)} F CFA${f.is_forfait ? ' (forfait)' : '/pers.'}</option>`
+      )
+      .join('');
+  if (formules.some((f) => f.nom === currentValue)) formuleSelect.value = currentValue;
+}
+
+function applyPrestationFormule(row) {
+  const typeSelect = row.querySelector('.p-type-select');
+  const formuleSelect = row.querySelector('.p-formule-select');
+  const nom = formuleSelect.value;
+  const forfaitField = row.querySelector('.p-forfait');
+  const tarifEnfantField = row.querySelector('.p-tarif-enfant');
+  if (!nom) {
+    forfaitField.value = '';
+    tarifEnfantField.value = '';
+    scheduleCommentUpdate();
+    return;
+  }
+  const formule = getFormulesForType(typeSelect.value).find((f) => f.nom === nom);
+  if (!formule) return;
+  row.querySelector('.p-tarif').value = formule.tarif_personne || '';
+  if (formule.description) row.querySelector('.p-menu').value = formule.description;
+  tarifEnfantField.value = formule.is_forfait ? '' : formule.tarif_enfant || '';
+  forfaitField.value = formule.is_forfait ? '1' : '';
+  scheduleCommentUpdate();
+}
+
+function addPrestationRow(data) {
+  const template = document.getElementById('prestationRowTemplate');
+  const clone = template.content.cloneNode(true);
+  const row = clone.querySelector('.room-row');
+
+  const typeSelect = row.querySelector('.p-type-select');
+
+  if (data) {
+    typeSelect.value = data.type_evenement || 'brunch';
+    row.querySelector('.p-date').value = data.date_evenement || '';
+    row.querySelector('.p-heure').value = data.heure || '';
+    row.querySelector('.p-lieu-select').value = data.lieu || '';
+    row.querySelector('.p-personnes').value = data.nb_personnes || 1;
+    row.querySelector('.p-enfants').value = data.nb_enfants_moins_10 || 0;
+    row.querySelector('.p-tarif').value = data.tarif_personne || '';
+    row.querySelector('.p-tarif-enfant').value = data.tarif_enfant || '';
+    row.querySelector('.p-forfait').value = data.is_forfait ? '1' : '';
+    row.querySelector('.p-menu').value = data.formule_menu || '';
+  }
+
+  populatePrestationFormuleSelect(row);
+  if (data && data.nom_formule) row.querySelector('.p-formule-select').value = data.nom_formule;
+
+  typeSelect.addEventListener('change', () => {
+    populatePrestationFormuleSelect(row);
+    row.querySelector('.p-formule-select').value = '';
+    scheduleCommentUpdate();
+  });
+
+  row.querySelector('.p-formule-select').addEventListener('change', () => applyPrestationFormule(row));
+
+  row.querySelector('.btn-remove-room').addEventListener('click', () => {
+    row.remove();
+    scheduleCommentUpdate();
+  });
+
+  document.getElementById('prestationsList').appendChild(row);
+}
+
+function collectPrestations() {
+  return Array.from(document.querySelectorAll('#prestationsList .room-row')).map((row) => ({
+    type_evenement: row.querySelector('.p-type-select').value,
+    nom_formule: row.querySelector('.p-formule-select').value,
+    date_evenement: row.querySelector('.p-date').value,
+    heure: row.querySelector('.p-heure').value,
+    lieu: row.querySelector('.p-lieu-select').value,
+    nb_personnes: row.querySelector('.p-personnes').value,
+    nb_enfants_moins_10: row.querySelector('.p-enfants').value,
+    tarif_personne: row.querySelector('.p-tarif').value,
+    tarif_enfant: row.querySelector('.p-tarif-enfant').value,
+    is_forfait: !!row.querySelector('.p-forfait').value,
+    formule_menu: row.querySelector('.p-menu').value,
+  }));
+}
+
+// ===================== COLLECTE DES DONNÉES DU FORMULAIRE =====================
+function collectFormData() {
+  const form = document.getElementById('resaForm');
+  const fd = new FormData(form);
+  const data = { type: currentType, rooms: collectRooms(), prestations: collectPrestations() };
+  for (const [key, value] of fd.entries()) {
+    if (key === 'rooms') continue;
+    data[key] = value;
+  }
+  data.exoneration_tva = !!document.querySelector('[name="exoneration_tva"]').checked;
+  data.late_checkout = !!document.querySelector('[name="late_checkout"]').checked;
+  data.bon_de_commande_requis = !!document.querySelector('[name="bon_de_commande_requis"]').checked;
+  data.rooming_list_requise = !!document.querySelector('[name="rooming_list_requise"]').checked;
+  data.inclure_infos_pratiques = !!document.querySelector('[name="inclure_infos_pratiques"]').checked;
+  data.grille = document.getElementById('grilleSelect').value;
+  data.regime = document.getElementById('regimeSelect').value;
+  if (editingId) data.id = editingId;
+  return data;
+}
+
+// ===================== GÉNÉRATION DU COMMENTAIRE (auto, live) =====================
+let commentDebounce;
+function scheduleCommentUpdate() {
+  clearTimeout(commentDebounce);
+  commentDebounce = setTimeout(updateComment, 200);
+}
+
+function updateComment() {
+  const data = collectFormData();
+  document.getElementById('commentOutput').textContent = generateComment(data) || '—';
+  updateHiddenDataHint();
+}
+
+document.addEventListener('input', (e) => {
+  if (e.target.closest('#resaForm')) scheduleCommentUpdate();
+});
+document.addEventListener('change', (e) => {
+  if (e.target.closest('#resaForm')) scheduleCommentUpdate();
+});
+
+// ===================== EMAIL (généré par règles, sans IA) =====================
+function setupEmailGeneration() {
+  document.getElementById('generateEmailBtn').addEventListener('click', () => {
+    const data = collectFormData();
+    const suggested = suggestEmailType(data);
+    document.getElementById('emailTypeSelect').value = suggested;
+    const text = generateEmail(data, suggested);
+    document.getElementById('emailOutput').value = text;
+  });
+
+  document.getElementById('emailTypeSelect').addEventListener('change', () => {
+    const data = collectFormData();
+    const emailType = document.getElementById('emailTypeSelect').value;
+    document.getElementById('emailOutput').value = generateEmail(data, emailType);
+  });
+}
+
+// ===================== COPIER =====================
+function setupCopyButtons() {
+  document.getElementById('copyCommentBtn').addEventListener('click', () => {
+    copyText(document.getElementById('commentOutput').textContent, 'copyCommentBtn');
+  });
+  document.getElementById('copyEmailBtn').addEventListener('click', () => {
+    copyText(document.getElementById('emailOutput').value, 'copyEmailBtn');
+  });
+}
+
+function copyText(text, btnId) {
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(btnId);
+    const original = btn.textContent;
+    btn.textContent = 'Copié !';
+    setTimeout(() => (btn.textContent = original), 1500);
+  });
+}
+
+// ===================== PROFORMA (Excel + PDF) =====================
+function setupProforma() {
+  const errorEl = document.getElementById('proformaError');
+
+  document.getElementById('generateProformaExcelBtn').addEventListener('click', () => {
+    errorEl.style.display = 'none';
+    errorEl.className = 'error-text';
+    try {
+      const data = collectFormData();
+      const hasRoomLine = data.rooms && data.rooms.some((r) => r.tarif);
+      const hasPrestationLine = data.prestations && data.prestations.some((p) => p.tarif_personne);
+      if (!hasRoomLine && !hasPrestationLine) {
+        throw new Error('Veuillez renseigner au moins une chambre ou une prestation avec un tarif avant de générer la proforma.');
+      }
+      const model = generateProformaExcel(data);
+      errorEl.textContent = `Excel généré ✓ (n° ${model.numero})`;
+      errorEl.style.color = 'var(--success)';
+      errorEl.style.display = 'block';
+    } catch (e) {
+      errorEl.textContent = e.message;
+      errorEl.style.color = 'var(--danger)';
+      errorEl.style.display = 'block';
+    }
+    errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  document.getElementById('generateProformaPdfBtn').addEventListener('click', () => {
+    errorEl.style.display = 'none';
+    try {
+      const data = collectFormData();
+      const hasRoomLine = data.rooms && data.rooms.some((r) => r.tarif);
+      const hasPrestationLine = data.prestations && data.prestations.some((p) => p.tarif_personne);
+      if (!hasRoomLine && !hasPrestationLine) {
+        throw new Error('Veuillez renseigner au moins une chambre ou une prestation avec un tarif avant de générer la proforma.');
+      }
+      const model = generateProformaPDF(data);
+      errorEl.textContent = `PDF généré ✓ (n° ${model.numero})`;
+      errorEl.style.color = 'var(--success)';
+      errorEl.style.display = 'block';
+    } catch (e) {
+      errorEl.textContent = e.message;
+      errorEl.style.color = 'var(--danger)';
+      errorEl.style.display = 'block';
+    }
+    errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+}
+
+// ===================== ENREGISTREMENT =====================
+function setupFormSubmit() {
+  document.getElementById('resaForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = collectFormData();
+    data.email_type = document.getElementById('emailTypeSelect').value;
+    data.email_genere = document.getElementById('emailOutput').value;
+    data.commentaire_genere = generateComment(data);
+
+    const hint = document.getElementById('saveHint');
+    try {
+      const saved = saveReservation(data);
+      editingId = saved.id;
+      hint.textContent = `Réservation enregistrée ✓`;
+      hint.style.color = 'var(--success)';
+    } catch (err) {
+      hint.textContent = "Erreur lors de l'enregistrement : " + err.message;
+      hint.style.color = 'var(--danger)';
+    }
+    hint.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+}
+
+// ===================== HISTORIQUE =====================
+let historyKindFilter = 'toutes';
+
+function setupHistory() {
+  document.getElementById('searchInput').addEventListener('input', debounce(loadHistory, 250));
+  document.getElementById('statutFilter').addEventListener('change', loadHistory);
+  document.getElementById('exportBtn').addEventListener('click', exportHistory);
+  document.getElementById('importBtn').addEventListener('click', () => {
+    document.getElementById('importFileInput').click();
+  });
+  document.getElementById('importFileInput').addEventListener('change', handleImportFile);
+
+  document.querySelectorAll('#historyKindSegmented .seg-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#historyKindSegmented .seg-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      historyKindFilter = btn.dataset.value;
+      loadHistory();
+    });
+  });
+}
+
+function handleImportFile(e) {
+  const file = e.target.files[0];
+  const hint = document.getElementById('importHint');
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const imported = JSON.parse(event.target.result);
+      if (!Array.isArray(imported)) throw new Error('Le fichier ne contient pas une liste de réservations valide.');
+
+      const existing = getAllReservations();
+      const existingIds = new Set(existing.map((r) => r.id));
+      let ajoutes = 0;
+      let misAJour = 0;
+
+      imported.forEach((r) => {
+        if (!r.id) return;
+        if (existingIds.has(r.id)) {
+          const idx = existing.findIndex((e) => e.id === r.id);
+          existing[idx] = r;
+          misAJour++;
+        } else {
+          existing.push(r);
+          ajoutes++;
+        }
+      });
+
+      saveAllReservations(existing);
+      hint.style.color = 'var(--success)';
+      hint.textContent = `Import réussi : ${ajoutes} réservation(s) ajoutée(s), ${misAJour} mise(s) à jour.`;
+      loadHistory();
+    } catch (err) {
+      hint.style.color = 'var(--danger)';
+      hint.textContent = "Erreur lors de l'import : " + err.message;
+    }
+    hint.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    e.target.value = ''; // permet de réimporter le même fichier si besoin
+  };
+  reader.readAsText(file);
+}
+
+function debounce(fn, delay) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), delay);
+  };
+}
+
+function loadHistory() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const statut = document.getElementById('statutFilter').value;
+  let list = getAllReservations();
+
+  if (search) {
+    list = list.filter(
+      (r) => (r.nom_client || '').toLowerCase().includes(search) || (r.societe || '').toLowerCase().includes(search)
+    );
+  }
+  if (statut) list = list.filter((r) => r.statut === statut);
+
+  if (historyKindFilter === 'chambres') list = list.filter((r) => (r.rooms || []).length > 0);
+  else if (historyKindFilter === 'evenements') list = list.filter((r) => (r.prestations || []).length > 0);
+
+  list.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+  const container = document.getElementById('historyList');
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty-state">Aucune réservation trouvée.</div>';
+    return;
+  }
+
+  container.innerHTML = list
+    .map((r) => {
+      const roomsSummary = (r.rooms || []).map((room) => room.type_chambre).filter(Boolean).join(', ');
+      const prestationsSummary = (r.prestations || [])
+        .map((p) => p.nom_formule || EVENT_TYPE_LABELS_FR[p.type_evenement] || 'Prestation')
+        .filter(Boolean)
+        .join(', ');
+      const summary = [roomsSummary, prestationsSummary].filter(Boolean).join(' + ') || 'Aucune ligne';
+      const kindBadge = roomsSummary && prestationsSummary ? '🏨🎉' : prestationsSummary ? '🎉' : '🏨';
+      return `
+      <div class="history-item" data-id="${r.id}">
+        <div class="history-item-main">
+          <h3>${kindBadge} ${r.civilite || ''} ${r.nom_client || '(sans nom)'} ${r.societe ? '— ' + r.societe : ''}</h3>
+          <p>${summary} · Agent ${r.agent} · MAJ ${formatDate(r.updated_at)}</p>
+        </div>
+        <span class="badge badge-${r.statut}">${statutLabel(r.statut)}</span>
+      </div>`;
+    })
+    .join('');
+
+  container.querySelectorAll('.history-item').forEach((el) => {
+    el.addEventListener('click', () => loadReservationIntoForm(el.dataset.id));
+  });
+}
+
+function statutLabel(statut) {
+  return { option: 'Option', confirmee: 'Confirmée', annulee: 'Annulée', no_show: 'No-show' }[statut] || statut;
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function loadReservationIntoForm(id) {
+  const r = getReservation(id);
+  if (!r) return;
+  editingId = r.id;
+
+  document.querySelector('.tab-btn[data-tab="new"][data-mode="mixte"]').click();
+
+  currentType = r.type;
+  document.querySelectorAll('#typeSegmented .seg-btn').forEach((b) => b.classList.toggle('active', b.dataset.value === r.type));
+  document.getElementById('institutionCard').style.display = r.type === 'institution' ? 'block' : 'none';
+  document.getElementById('groupeCard').style.display = (r.type === 'groupe' || r.type === 'institution') ? 'block' : 'none';
+
+  const form = document.getElementById('resaForm');
+  Object.entries(r).forEach(([key, value]) => {
+    const field = form.querySelector(`[name="${key}"]`);
+    if (!field) return;
+    if (field.type === 'checkbox') field.checked = !!value;
+    else field.value = value ?? '';
+  });
+
+  document.getElementById('bdcStatutWrap').style.display = r.bon_de_commande_requis ? 'block' : 'none';
+  document.getElementById('roomingStatutWrap').style.display = r.rooming_list_requise ? 'block' : 'none';
+  document.getElementById('navetteVolsWrap').style.display = r.navette_statut === 'confirmee' ? 'grid' : 'none';
+
+  document.getElementById('roomsList').innerHTML = '';
+  (r.rooms && r.rooms.length ? r.rooms : [{}]).forEach((room) => addRoomRow(room));
+
+  document.getElementById('prestationsList').innerHTML = '';
+  (r.prestations || []).forEach((p) => addPrestationRow(p));
+
+  if (r.email_type) document.getElementById('emailTypeSelect').value = r.email_type;
+  if (r.email_genere) document.getElementById('emailOutput').value = r.email_genere;
+
+  updateComment();
+  document.getElementById('saveHint').textContent = 'Modification d\'une réservation existante';
+  document.getElementById('saveHint').style.color = 'var(--ink-soft)';
+}
+
+function exportHistory() {
+  const list = getAllReservations();
+  const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `reservations-maison-rouge-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* =========================================================================
+   ANALYSE D'UNE BOUCLE DE MAILS (sans IA) — détection par mots-clés/regex.
+   But : repérer rapidement les infos courantes dans un mail collé par
+   l'utilisateur, pour lui éviter une ressaisie complète. C'est une aide,
+   pas une compréhension fine : le résultat est toujours affiché de façon
+   éditable et doit être vérifié avant pré-remplissage.
+   ========================================================================= */
+
+function escapeAttr(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function guessCivilite(text) {
+  const hasM = /\bmonsieur\b/i.test(text);
+  const hasMme = /\bmadame\b/i.test(text);
+  if (hasM && hasMme) return 'Monsieur/Madame';
+  if (hasMme) return 'Madame';
+  if (hasM) return 'Monsieur';
+  return '';
+}
+
+function guessNomClient(text) {
+  const re = /\b(?:Monsieur|Madame|M\.|Mme)\s+([A-ZÀ-Ý][A-Za-zÀ-ÿ'\-]{1,30}(?:\s+[A-ZÀ-Ý][A-Za-zÀ-ÿ'\-]{1,30})?)/;
+  const m = text.match(re);
+  return m ? m[1].toUpperCase() : '';
+}
+
+function guessSociete(text) {
+  const keywords = ['ambassade', 'banque', 'société', 'societe', 'ong', 'ministère', 'ministere', 'organisation', 'institut', 'agence'];
+  const lines = text.split(/\n/);
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+    if (keywords.some((k) => lower.includes(k))) {
+      const m = line.match(/([A-ZÀ-Ý][\wÀ-ÿ'\-]*(?:\s+(?:de|du|des|d'|l'|[A-ZÀ-Ý][\wÀ-ÿ'\-]*)){0,5})/);
+      if (m && m[1].trim().length > 2) return m[1].trim();
+    }
+  }
+  return '';
+}
+
+function parseFrenchDateToken(day, monthToken, year) {
+  let monthIndex;
+  if (!monthToken) return '';
+  if (/^\d+$/.test(monthToken)) {
+    monthIndex = parseInt(monthToken, 10) - 1;
+  } else {
+    monthIndex = MOIS_FR.findIndex((m) => m.toLowerCase() === monthToken.toLowerCase());
+  }
+  if (monthIndex < 0 || monthIndex > 11) return '';
+  const y = year ? parseInt(year, 10) : new Date().getFullYear();
+  const mm = String(monthIndex + 1).padStart(2, '0');
+  const dd = String(parseInt(day, 10)).padStart(2, '0');
+  return `${y}-${mm}-${dd}`;
+}
+
+function guessDateRange(text) {
+  const moisRegex = MOIS_FR.join('|');
+
+  // ex: "du 12 au 15 mai 2026" ou "du 12 mai au 15 mai 2026"
+  let re = new RegExp(`\\bdu\\s+(\\d{1,2})(?:\\s+(${moisRegex}))?\\s+au\\s+(\\d{1,2})\\s+(${moisRegex})\\s+(\\d{4})`, 'i');
+  let m = text.match(re);
+  if (m) {
+    const [, d1, mo1, d2, mo2, year] = m;
+    return {
+      arrivee: parseFrenchDateToken(d1, mo1 || mo2, year),
+      depart: parseFrenchDateToken(d2, mo2, year),
+    };
+  }
+
+  // ex: "12/05/2026 au 15/05/2026" ou "12.05.2026 - 15.05.2026"
+  re = /(\d{1,2})[./](\d{1,2})[./](\d{4})\s*(?:au|-|jusqu'au|>)\s*(\d{1,2})[./](\d{1,2})[./](\d{4})/i;
+  m = text.match(re);
+  if (m) {
+    const [, d1, mo1, y1, d2, mo2, y2] = m;
+    return {
+      arrivee: `${y1}-${String(mo1).padStart(2, '0')}-${String(d1).padStart(2, '0')}`,
+      depart: `${y2}-${String(mo2).padStart(2, '0')}-${String(d2).padStart(2, '0')}`,
+    };
+  }
+
+  return { arrivee: '', depart: '' };
+}
+
+function guessTarif(text) {
+  const matches = [...text.matchAll(/(\d[\d\s.,]{2,})\s?(?:F\s?CFA|FCFA|XOF)/gi)];
+  if (matches.length === 0) return '';
+  const nums = matches.map((mm) => parseInt(mm[1].replace(/[^\d]/g, ''), 10)).filter((n) => n > 0);
+  if (nums.length === 0) return '';
+  return nums[0]; // premier montant trouvé — à vérifier, peut être un total plutôt qu'un tarif/nuit
+}
+
+/**
+ * Détecte une heure dans le texte, sous plusieurs formats courants :
+ * "12h00", "12h", "12:00", "midi", "minuit". Retourne un format normalisé
+ * "HHhMM" ou '' si rien n'est détecté.
+ */
+function guessHeure(text) {
+  if (/\bmidi\b/i.test(text)) return '12h00';
+  if (/\bminuit\b/i.test(text)) return '00h00';
+  let m = text.match(/\b(\d{1,2})\s*[h:]\s*(\d{2})\b/);
+  if (m) return `${String(parseInt(m[1], 10)).padStart(2, '0')}h${m[2]}`;
+  m = text.match(/\b(\d{1,2})\s*h\b/i);
+  if (m) return `${String(parseInt(m[1], 10)).padStart(2, '0')}h00`;
+  return '';
+}
+
+/**
+ * Détecte le lieu d'un événement parmi les espaces de l'hôtel
+ * (voir EVENT_LIEU_DETECTION_ORDER, du plus spécifique au plus général).
+ */
+function guessLieu(text) {
+  const found = EVENT_LIEU_DETECTION_ORDER.find((entry) => entry.pattern.test(text));
+  return found ? found.value : '';
+}
+
+/**
+ * Détecte le type d'événement. Priorité au type de célébration
+ * (anniversaire/cocktail) sur le simple type de repas (brunch/déjeuner/dîner),
+ * car un mail peut mentionner les deux (ex: "brunch d'anniversaire").
+ */
+function guessEventType(text) {
+  const lower = text.toLowerCase();
+  if (/anniversaire|cocktail|fête|fete|soirée dansante|soiree dansante/.test(lower)) return 'anniversaire';
+  if (/\bbrunch\b/.test(lower)) return 'brunch';
+  if (/déjeuner|dejeuner/.test(lower)) return 'dejeuner';
+  if (/dîner|diner/.test(lower)) return 'diner';
+  if (/événement|evenement|réception|reception|séminaire|seminaire|réunion|reunion|baptême|bapteme|mariage/.test(lower)) return 'autre';
+  return '';
+}
+
+/**
+ * Détecte une date unique (contrairement à guessDateRange qui cherche une
+ * plage "du ... au ..."), utile pour la date d'un événement ponctuel.
+ */
+function guessSingleDate(text) {
+  const moisRegex = MOIS_FR.join('|');
+  let re = new RegExp(`\\b(\\d{1,2})\\s+(${moisRegex})\\s+(\\d{4})\\b`, 'i');
+  let m = text.match(re);
+  if (m) {
+    const [, d, mo, y] = m;
+    return parseFrenchDateToken(d, mo, y);
+  }
+  re = /\b(\d{1,2})[./](\d{1,2})[./](\d{4})\b/;
+  m = text.match(re);
+  if (m) {
+    const [, d, mo, y] = m;
+    return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+  return '';
+}
+
+function guessNbPersonnes(text) {
+  const m = text.match(/(\d+)\s*(personnes?|pers\.|adultes?)/i);
+  return m ? m[1] : '';
+}
+
+function guessNbEnfants(text) {
+  const m = text.match(/(\d+)\s*enfants?/i);
+  return m ? m[1] : '';
+}
+
+function guessTypeChambre(text) {
+  const lower = text.toLowerCase();
+  for (const cat of ROOM_CATEGORIES) {
+    if (lower.includes(cat.label.toLowerCase())) return cat.code;
+  }
+  if (lower.includes('présidentielle')) return 'suite_presidentielle';
+  if (lower.includes('junior')) return 'suite_junior_piscine';
+  if (lower.includes('supérieure') && lower.includes('cour')) return 'suite_superieure_cour';
+  if (lower.includes('supérieure') && lower.includes('piscine')) return 'suite_superieure_piscine';
+  if (lower.includes('balcon')) return 'superieure_balcon';
+  if (lower.includes('éco')) return 'classique_eco';
+  if (lower.includes('vue cour')) return 'classique_vue_cour';
+  return '';
+}
+
+function guessNavette(text) {
+  const lower = text.toLowerCase();
+  const result = { statut: 'en_attente', volArrivee: '', volDepart: '' };
+  if (/navette/.test(lower) && /(non souhait|pas besoin|sans navette|pas de navette)/.test(lower)) {
+    result.statut = 'non_souhaitee';
+    return result;
+  }
+  const volMatches = [...text.matchAll(/\b([A-Z]{2}\s?\d{2,4})\b/g)].map((mm) => mm[1]);
+  if (volMatches.length >= 1) {
+    result.statut = 'confirmee';
+    result.volArrivee = volMatches[0];
+    if (volMatches.length >= 2) result.volDepart = volMatches[1];
+  }
+  return result;
+}
+
+function guessGarantie(text) {
+  const modes = [
+    { re: /lien de paiement/i, value: 'lien_paiement' },
+    { re: /préautorisation|pre-autorisation|carte bancaire/i, value: 'preautorisation' },
+    { re: /espèces|especes/i, value: 'especes' },
+    { re: /virement/i, value: 'virement' },
+    { re: /mobile money/i, value: 'mobile_money' },
+  ];
+  const found = modes.find((mm) => mm.re.test(text));
+  const recue = /(garantie (?:reçue|recue|confirmée|ok)|paiement reçu|paiement effectué)/i.test(text);
+  return { statut: recue ? 'recue' : 'en_attente', mode: found ? found.value : '' };
+}
+
+function guessStatutReservation(text) {
+  const lower = text.toLowerCase();
+  if (/no[-\s]?show/i.test(lower)) return 'no_show';
+  if (/annul/i.test(lower)) return 'annulee';
+  if (/confirm/i.test(lower)) return 'confirmee';
+  return 'option';
+}
+
+function guessLateCheckout(text) {
+  const m = text.match(/late[\s-]?check[\s-]?out(?:[^.\n]{0,60})?/i);
+  return { present: !!m, detail: m ? m[0].replace(/^late[\s-]?check[\s-]?out\s*/i, '').trim() : '' };
+}
+
+function guessRoomingList(text) {
+  if (!/rooming list/i.test(text)) return { requise: false, statut: 'en_attente' };
+  const recue = /rooming list[^.\n]{0,25}(reçue|recue|reçu|envoyée)/i.test(text);
+  return { requise: true, statut: recue ? 'recue' : 'en_attente' };
+}
+
+function guessBonDeCommande(text) {
+  if (!/bon de commande|\bBDC\b/i.test(text)) return { requis: false, statut: 'en_attente' };
+  const recu = /(bon de commande|BDC)[^.\n]{0,25}(reçu|recu)/i.test(text);
+  return { requis: true, statut: recu ? 'recu' : 'en_attente' };
+}
+
+function analyzeEmailText(text) {
+  const dateRange = guessDateRange(text);
+  const navette = guessNavette(text);
+  const garantie = guessGarantie(text);
+  const lateCheckout = guessLateCheckout(text);
+  const roomingList = guessRoomingList(text);
+  const bdc = guessBonDeCommande(text);
+
+  return {
+    civilite: guessCivilite(text),
+    nom_client: guessNomClient(text),
+    societe: guessSociete(text),
+    statut: guessStatutReservation(text),
+    navette_statut: navette.statut,
+    navette_vol_arrivee: navette.volArrivee,
+    navette_vol_depart: navette.volDepart,
+    garantie_statut: garantie.statut,
+    garantie_mode: garantie.mode,
+    late_checkout: lateCheckout.present,
+    late_checkout_detail: lateCheckout.detail,
+    rooming_list_requise: roomingList.requise,
+    rooming_list_statut: roomingList.statut,
+    bon_de_commande_requis: bdc.requis,
+    bon_de_commande_statut: bdc.statut,
+    room: {
+      type_chambre_code: guessTypeChambre(text),
+      date_arrivee: dateRange.arrivee,
+      date_depart: dateRange.depart,
+      nb_personnes: guessNbPersonnes(text),
+      nb_enfants_moins_10: guessNbEnfants(text),
+      tarif: guessTarif(text),
+    },
+    event: {
+      type: guessEventType(text),
+      date_evenement: guessSingleDate(text),
+      heure: guessHeure(text),
+      lieu: guessLieu(text),
+      nb_personnes: guessNbPersonnes(text),
+      nb_enfants: guessNbEnfants(text),
+      tarif_personne: guessTarif(text),
+    },
+  };
+}
+
+function setupEmailAnalyze() {
+  document.getElementById('analyzeEmailBtn').addEventListener('click', () => {
+    const text = document.getElementById('emailAnalyzeInput').value;
+    const container = document.getElementById('analyzeResults');
+    if (!text.trim()) {
+      container.innerHTML = '<div class="empty-state">Veuillez coller un texte à analyser.</div>';
+      return;
+    }
+    const data = analyzeEmailText(text);
+    renderAnalyzeResults(data);
+  });
+}
+
+function renderAnalyzeResults(data) {
+  const container = document.getElementById('analyzeResults');
+  const typeOptions = ROOM_CATEGORIES.map(
+    (c) => `<option value="${c.code}" ${c.code === data.room.type_chambre_code ? 'selected' : ''}>${c.label}</option>`
+  ).join('');
+
+  container.innerHTML = `
+    <div class="field-grid">
+      <label>Civilité
+        <select id="an_civilite">
+          <option value="Monsieur" ${data.civilite === 'Monsieur' ? 'selected' : ''}>Monsieur</option>
+          <option value="Madame" ${data.civilite === 'Madame' ? 'selected' : ''}>Madame</option>
+          <option value="Monsieur/Madame" ${data.civilite === 'Monsieur/Madame' ? 'selected' : ''}>Monsieur/Madame</option>
+        </select>
+      </label>
+      <label>Nom du client
+        <input type="text" id="an_nom_client" value="${escapeAttr(data.nom_client)}" placeholder="non détecté" />
+      </label>
+      <label class="span2">Société / institution (si détectée)
+        <input type="text" id="an_societe" value="${escapeAttr(data.societe)}" placeholder="non détecté" />
+      </label>
+      <label>Statut réservation
+        <select id="an_statut">
+          <option value="option" ${data.statut === 'option' ? 'selected' : ''}>Option</option>
+          <option value="confirmee" ${data.statut === 'confirmee' ? 'selected' : ''}>Confirmée</option>
+          <option value="annulee" ${data.statut === 'annulee' ? 'selected' : ''}>Annulée</option>
+          <option value="no_show" ${data.statut === 'no_show' ? 'selected' : ''}>No-show</option>
+        </select>
+      </label>
+    </div>
+
+    <h2 style="margin-top:16px;">Chambre détectée</h2>
+    <div class="field-grid">
+      <label>Type de chambre
+        <select id="an_type_chambre">
+          <option value="">— Non détecté —</option>
+          ${typeOptions}
+        </select>
+      </label>
+      <label>Arrivée
+        <input type="date" id="an_arrivee" value="${data.room.date_arrivee}" />
+      </label>
+      <label>Départ
+        <input type="date" id="an_depart" value="${data.room.date_depart}" />
+      </label>
+      <label>Tarif nuitée (F CFA)
+        <input type="text" id="an_tarif" value="${escapeAttr(data.room.tarif || '')}" placeholder="non détecté" />
+      </label>
+      <label>Nb personnes
+        <input type="number" min="1" id="an_personnes" value="${data.room.nb_personnes || 1}" />
+      </label>
+      <label>Dont enfants -10 ans
+        <input type="number" min="0" id="an_enfants" value="${data.room.nb_enfants_moins_10 || 0}" />
+      </label>
+    </div>
+
+    <h2 style="margin-top:16px;">Autres infos détectées</h2>
+    <div class="field-grid">
+      <label>Navette
+        <select id="an_navette_statut">
+          <option value="en_attente" ${data.navette_statut === 'en_attente' ? 'selected' : ''}>En attente d'infos de vol</option>
+          <option value="confirmee" ${data.navette_statut === 'confirmee' ? 'selected' : ''}>Confirmée</option>
+          <option value="non_souhaitee" ${data.navette_statut === 'non_souhaitee' ? 'selected' : ''}>Non souhaitée</option>
+        </select>
+      </label>
+      <label>Vol arrivée
+        <input type="text" id="an_vol_arrivee" value="${escapeAttr(data.navette_vol_arrivee)}" placeholder="non détecté" />
+      </label>
+      <label>Vol départ
+        <input type="text" id="an_vol_depart" value="${escapeAttr(data.navette_vol_depart)}" placeholder="non détecté" />
+      </label>
+      <label>Garantie
+        <select id="an_garantie_statut">
+          <option value="en_attente" ${data.garantie_statut === 'en_attente' ? 'selected' : ''}>En attente</option>
+          <option value="recue" ${data.garantie_statut === 'recue' ? 'selected' : ''}>Reçue</option>
+        </select>
+      </label>
+      <label>Mode garantie
+        <select id="an_garantie_mode">
+          <option value="">—</option>
+          <option value="lien_paiement" ${data.garantie_mode === 'lien_paiement' ? 'selected' : ''}>Lien de paiement sécurisé</option>
+          <option value="preautorisation" ${data.garantie_mode === 'preautorisation' ? 'selected' : ''}>Préautorisation carte</option>
+          <option value="especes" ${data.garantie_mode === 'especes' ? 'selected' : ''}>Espèces à la réception</option>
+          <option value="virement" ${data.garantie_mode === 'virement' ? 'selected' : ''}>Virement bancaire</option>
+          <option value="mobile_money" ${data.garantie_mode === 'mobile_money' ? 'selected' : ''}>Mobile Money</option>
+        </select>
+      </label>
+      <label class="checkbox-line"><input type="checkbox" id="an_late_checkout" ${data.late_checkout ? 'checked' : ''} /> Late check-out demandé</label>
+      <label class="checkbox-line"><input type="checkbox" id="an_rooming" ${data.rooming_list_requise ? 'checked' : ''} /> Rooming list nécessaire</label>
+      <label class="checkbox-line"><input type="checkbox" id="an_bdc" ${data.bon_de_commande_requis ? 'checked' : ''} /> Bon de commande requis</label>
+    </div>
+
+    <p class="hint-text" style="text-align:left; margin-top:10px;">⚠️ Détection automatique par mots-clés (locale, sans IA) — corrigez chaque champ si besoin avant de pré-remplir.</p>
+    <button type="button" class="btn-primary btn-full" id="prefillFromAnalyzeBtn" style="margin-top:10px;">➜ Pré-remplir la réservation (chambre)</button>
+
+    <h2 style="margin-top:24px;">Événement détecté</h2>
+    <p class="hint-text" style="text-align:left; margin-bottom:10px;">Un même mail peut mentionner à la fois un séjour et un événement (ex: brunch d'anniversaire) — utilisez ce bloc si c'est le cas, indépendamment du bloc chambre ci-dessus.</p>
+    <div class="field-grid">
+      <label>Type d'événement
+        <select id="an_event_type">
+          <option value="">— Non détecté —</option>
+          <option value="brunch" ${data.event.type === 'brunch' ? 'selected' : ''}>Brunch</option>
+          <option value="dejeuner" ${data.event.type === 'dejeuner' ? 'selected' : ''}>Déjeuner</option>
+          <option value="diner" ${data.event.type === 'diner' ? 'selected' : ''}>Dîner</option>
+          <option value="anniversaire" ${data.event.type === 'anniversaire' ? 'selected' : ''}>Anniversaire / Cocktail</option>
+          <option value="autre" ${data.event.type === 'autre' ? 'selected' : ''}>Autre</option>
+        </select>
+      </label>
+      <label>Date de l'événement
+        <input type="date" id="an_event_date" value="${data.event.date_evenement}" />
+      </label>
+      <label>Heure
+        <input type="text" id="an_event_heure" value="${escapeAttr(data.event.heure)}" placeholder="ex: 12h00" />
+      </label>
+      <label>Lieu
+        <select id="an_event_lieu">
+          <option value="">— À préciser —</option>
+          <option value="salle_m3" ${data.event.lieu === 'salle_m3' ? 'selected' : ''}>Salle M3</option>
+          <option value="salle_m4" ${data.event.lieu === 'salle_m4' ? 'selected' : ''}>Salle M4</option>
+          <option value="terrasse_m1" ${data.event.lieu === 'terrasse_m1' ? 'selected' : ''}>Terrasse M1</option>
+          <option value="terrasse_m3" ${data.event.lieu === 'terrasse_m3' ? 'selected' : ''}>Terrasse M3</option>
+          <option value="terrasse_m4" ${data.event.lieu === 'terrasse_m4' ? 'selected' : ''}>Terrasse M4</option>
+          <option value="rooftop_m1" ${data.event.lieu === 'rooftop_m1' ? 'selected' : ''}>Rooftop M1</option>
+          <option value="restaurant" ${data.event.lieu === 'restaurant' ? 'selected' : ''}>Restaurant</option>
+          <option value="salon_xf" ${data.event.lieu === 'salon_xf' ? 'selected' : ''}>Salon XF</option>
+        </select>
+      </label>
+      <label>Nombre de personnes
+        <input type="number" min="1" id="an_event_personnes" value="${data.event.nb_personnes || 1}" />
+      </label>
+      <label>Dont enfants -10 ans
+        <input type="number" min="0" id="an_event_enfants" value="${data.event.nb_enfants || 0}" />
+      </label>
+      <label>Tarif par personne (F CFA)
+        <input type="text" id="an_event_tarif" value="${escapeAttr(data.event.tarif_personne || '')}" placeholder="non détecté" />
+      </label>
+    </div>
+    <button type="button" class="btn-primary btn-full" id="prefillEventFromAnalyzeBtn" style="margin-top:10px;">➜ Pré-remplir l'événement</button>
+  `;
+
+  document.getElementById('prefillFromAnalyzeBtn').addEventListener('click', prefillFormFromAnalysis);
+  document.getElementById('prefillEventFromAnalyzeBtn').addEventListener('click', () => prefillEventFromAnalysis(data));
+}
+
+function prefillFormFromAnalysis() {
+  const civilite = document.getElementById('an_civilite').value;
+  const nomClient = document.getElementById('an_nom_client').value;
+  const societe = document.getElementById('an_societe').value;
+  const statut = document.getElementById('an_statut').value;
+  const typeChambreCode = document.getElementById('an_type_chambre').value;
+  const arrivee = document.getElementById('an_arrivee').value;
+  const depart = document.getElementById('an_depart').value;
+  const tarif = document.getElementById('an_tarif').value;
+  const personnes = document.getElementById('an_personnes').value;
+  const enfants = document.getElementById('an_enfants').value;
+  const navetteStatut = document.getElementById('an_navette_statut').value;
+  const volArrivee = document.getElementById('an_vol_arrivee').value;
+  const volDepart = document.getElementById('an_vol_depart').value;
+  const garantieStatut = document.getElementById('an_garantie_statut').value;
+  const garantieMode = document.getElementById('an_garantie_mode').value;
+  const lateCheckout = document.getElementById('an_late_checkout').checked;
+  const roomingRequise = document.getElementById('an_rooming').checked;
+  const bdcRequis = document.getElementById('an_bdc').checked;
+
+  const form = document.getElementById('resaForm');
+  if (civilite) form.querySelector('[name="civilite"]').value = civilite;
+  if (nomClient) form.querySelector('[name="nom_client"]').value = nomClient;
+
+  if (societe) {
+    form.querySelector('[name="societe"]').value = societe;
+    document.querySelector('#typeSegmented .seg-btn[data-value="institution"]').click();
+  }
+
+  form.querySelector('[name="statut"]').value = statut;
+
+  form.querySelector('[name="navette_statut"]').value = navetteStatut;
+  document.getElementById('navetteVolsWrap').style.display = navetteStatut === 'confirmee' ? 'grid' : 'none';
+  if (volArrivee) form.querySelector('[name="navette_vol_arrivee"]').value = volArrivee;
+  if (volDepart) form.querySelector('[name="navette_vol_depart"]').value = volDepart;
+
+  form.querySelector('[name="garantie_statut"]').value = garantieStatut;
+  if (garantieMode) form.querySelector('[name="garantie_mode"]').value = garantieMode;
+
+  form.querySelector('[name="late_checkout"]').checked = lateCheckout;
+
+  form.querySelector('[name="rooming_list_requise"]').checked = roomingRequise;
+  document.getElementById('roomingStatutWrap').style.display = roomingRequise ? 'block' : 'none';
+
+  form.querySelector('[name="bon_de_commande_requis"]').checked = bdcRequis;
+  document.getElementById('bdcStatutWrap').style.display = bdcRequis ? 'block' : 'none';
+
+  // Chambre détectée : si la première chambre du formulaire est encore vide, on la remplace ; sinon on en ajoute une nouvelle
+  const roomData = {
+    type_chambre: typeChambreCode ? (ROOM_CATEGORIES.find((c) => c.code === typeChambreCode) || {}).label : '',
+    date_arrivee: arrivee,
+    date_depart: depart,
+    tarif: tarif,
+    nb_personnes: personnes || 1,
+    nb_enfants_moins_10: enfants || 0,
+  };
+  if (roomData.type_chambre || roomData.date_arrivee || roomData.tarif) {
+    const existingRows = document.querySelectorAll('.room-row');
+    const firstRow = existingRows[0];
+    const firstRowEmpty = firstRow && !firstRow.querySelector('.r-type-select').value && !firstRow.querySelector('.r-arrivee').value;
+    if (firstRowEmpty) firstRow.remove();
+
+    addRoomRow(roomData);
+    const rows = document.querySelectorAll('.room-row');
+    const lastRow = rows[rows.length - 1];
+    if (typeChambreCode) {
+      lastRow.querySelector('.r-type-select').value = typeChambreCode;
+      applyRateToRoomRow(lastRow);
+      if (tarif) lastRow.querySelector('.r-tarif').value = tarif; // le tarif détecté prime sur la grille auto
+    }
+  }
+
+  document.querySelector('.tab-btn[data-tab="new"][data-mode="mixte"]').click();
+  updateComment();
+
+  const hint = document.getElementById('saveHint');
+  hint.textContent = "Formulaire pré-rempli à partir de l'analyse du mail — vérifiez chaque champ avant enregistrement.";
+  hint.style.color = 'var(--warn)';
+  hint.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/**
+ * Pré-remplit une PRESTATION ÉVÉNEMENT (dans le formulaire unifié) à partir
+ * de l'analyse du mail. Indépendant de prefillFormFromAnalysis (chambre) :
+ * un même mail peut contenir les deux et l'utilisateur peut vouloir
+ * pré-remplir l'un, l'autre, ou les deux successivement.
+ */
+function prefillEventFromAnalysis(data) {
+  const civilite = document.getElementById('an_civilite').value;
+  const nomClient = document.getElementById('an_nom_client').value;
+  const societe = document.getElementById('an_societe').value;
+  const statut = document.getElementById('an_statut').value;
+  const garantieStatut = document.getElementById('an_garantie_statut').value;
+  const garantieMode = document.getElementById('an_garantie_mode').value;
+
+  const eventType = document.getElementById('an_event_type').value;
+  const eventDate = document.getElementById('an_event_date').value;
+  const eventHeure = document.getElementById('an_event_heure').value;
+  const eventLieu = document.getElementById('an_event_lieu').value;
+  const eventPersonnes = document.getElementById('an_event_personnes').value;
+  const eventEnfants = document.getElementById('an_event_enfants').value;
+  const eventTarif = document.getElementById('an_event_tarif').value;
+
+  const form = document.getElementById('resaForm');
+  if (civilite) form.querySelector('[name="civilite"]').value = civilite;
+  if (nomClient) form.querySelector('[name="nom_client"]').value = nomClient;
+
+  if (societe) {
+    form.querySelector('[name="societe"]').value = societe;
+    document.querySelector('#typeSegmented .seg-btn[data-value="institution"]').click();
+  }
+
+  const statutMap = { option: 'option', confirmee: 'confirmee', annulee: 'annulee', no_show: 'no_show' };
+  form.querySelector('[name="statut"]').value = statutMap[statut] || 'option';
+
+  form.querySelector('[name="garantie_statut"]').value = garantieStatut;
+  if (garantieMode) form.querySelector('[name="garantie_mode"]').value = garantieMode;
+
+  // Prestation détectée : si la première prestation du formulaire est encore vide, on la remplace ; sinon on en ajoute une nouvelle
+  const prestationData = {
+    type_evenement: eventType || 'brunch',
+    date_evenement: eventDate,
+    heure: eventHeure,
+    lieu: eventLieu,
+    nb_personnes: eventPersonnes || 1,
+    nb_enfants_moins_10: eventEnfants || 0,
+    tarif_personne: eventTarif,
+  };
+  const existingRows = document.querySelectorAll('#prestationsList .room-row');
+  const firstRow = existingRows[0];
+  const firstRowEmpty = firstRow && !firstRow.querySelector('.p-date').value && !firstRow.querySelector('.p-tarif').value;
+  if (firstRowEmpty) firstRow.remove();
+  addPrestationRow(prestationData);
+
+  document.querySelector('.tab-btn[data-tab="new"][data-mode="mixte"]').click();
+  updateComment();
+
+  const hint = document.getElementById('saveHint');
+  hint.textContent = "Prestation événement pré-remplie à partir de l'analyse du mail — vérifiez chaque champ avant enregistrement.";
+  hint.style.color = 'var(--warn)';
+  hint.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/* =========================================================================
+   LABELS ÉVÉNEMENT (brunch, déjeuner, dîner, anniversaire/cocktail...) —
+   utilisés par les prestations du formulaire unifié, le commentaire/email,
+   la proforma, la détection dans l'analyse de mail, et les paramètres.
+   ========================================================================= */
+
+const STORAGE_KEY_EVENTS = 'maisonrouge_evenements'; // ancienne clé (pré-v15), utilisée pour la migration automatique
+
+const EVENT_TYPE_LABELS = {
+  brunch: 'BRUNCH',
+  dejeuner: 'DEJEUNER',
+  diner: 'DINER',
+  anniversaire: 'ANNIVERSAIRE/COCKTAIL',
+  autre: 'EVENEMENT',
+};
+
+const EVENT_TYPE_LABELS_FR = {
+  brunch: 'brunch',
+  dejeuner: 'déjeuner',
+  diner: 'dîner',
+  anniversaire: 'événement',
+  autre: 'événement',
+};
+
+const EVENT_LIEU_LABELS = {
+  salle_m3: 'SALLE M3',
+  salle_m4: 'SALLE M4',
+  terrasse_m1: 'TERRASSE M1',
+  terrasse_m3: 'TERRASSE M3',
+  terrasse_m4: 'TERRASSE M4',
+  rooftop_m1: 'ROOFTOP M1',
+  restaurant: 'RESTAURANT',
+  salon_xf: 'SALON XF',
+};
+
+// Ordre du plus spécifique au plus général, pour la détection par mots-clés dans un mail
+// (ex: éviter qu'un mail mentionnant juste "M3" ne soit mal interprété).
+const EVENT_LIEU_DETECTION_ORDER = [
+  { value: 'salle_m3', pattern: /salle\s*m\s*3/i },
+  { value: 'salle_m4', pattern: /salle\s*m\s*4/i },
+  { value: 'terrasse_m1', pattern: /terrasse\s*m\s*1/i },
+  { value: 'terrasse_m3', pattern: /terrasse\s*m\s*3/i },
+  { value: 'terrasse_m4', pattern: /terrasse\s*m\s*4/i },
+  { value: 'rooftop_m1', pattern: /\brooftop\b/i },
+  { value: 'salon_xf', pattern: /salon\s*xf/i },
+  { value: 'restaurant', pattern: /\brestaurant\b/i },
+];
+
+// ----- Grille tarifaire des événements (Paramètres) branchée aux prestations -----
+function getFormulesForType(type) {
+  return ((SETTINGS.evenements && SETTINGS.evenements.formules) || []).filter((f) => {
+    if (Array.isArray(f.types)) return f.types.includes(type);
+    return f.type === type; // compat anciennes données (un seul type)
+  });
+}
+/* =========================================================================
+   ONGLET PARAMÈTRES — rendu des tableaux éditables et sauvegarde
+   ========================================================================= */
+
+function agentRowInnerHtml(a) {
+  return `
+    <td><input type="text" class="agent-code" value="${escapeAttr(a ? a.code : '')}" style="text-transform:uppercase;" placeholder="ex: ARN" /></td>
+    <td><input type="text" class="agent-prenom" value="${escapeAttr(a ? a.prenom : '')}" placeholder="ex: Arnauld" /></td>
+    <td class="settings-row-actions"><button type="button" class="btn-remove-room remove-agent-btn" title="Retirer">✕</button></td>`;
+}
+
+function wireAgentRowRemovals() {
+  document.querySelectorAll('#agentsTableBody .remove-agent-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => e.target.closest('tr').remove());
+  });
+}
+
+function renderAgentsTable() {
+  const tbody = document.getElementById('agentsTableBody');
+  tbody.innerHTML = (SETTINGS.agents || []).map((a) => `<tr>${agentRowInnerHtml(a)}</tr>`).join('');
+  wireAgentRowRemovals();
+}
+
+function renderRoomRatesTables() {
+  const container = document.getElementById('roomRatesTables');
+  const grilles = [
+    { key: 'public', label: GRILLE_LABELS.public },
+    { key: 'societe', label: GRILLE_LABELS.societe },
+    { key: 'tour_operator', label: GRILLE_LABELS.tour_operator },
+  ];
+
+  container.innerHTML = grilles
+    .map((g) => {
+      const grilleData = SETTINGS.chambres[g.key] || {};
+      const rows = ROOM_CATEGORIES.map((cat) => {
+        const entry = grilleData[cat.code] || { tarif: 0, taxe: 0 };
+        return `
+        <tr>
+          <td>${cat.label}</td>
+          <td class="narrow"><input type="number" min="0" step="500" data-grille="${g.key}" data-cat="${cat.code}" data-field="tarif" value="${entry.tarif}" /></td>
+          <td class="narrow"><input type="number" min="0" step="100" data-grille="${g.key}" data-cat="${cat.code}" data-field="taxe" value="${entry.taxe}" /></td>
+        </tr>`;
+      }).join('');
+
+      const suppEntry = grilleData.personne_supplementaire || { tarif: 0, taxe: 0 };
+      const suppRow = `
+        <tr>
+          <td><em>Personne supplémentaire</em></td>
+          <td class="narrow"><input type="number" min="0" step="500" data-grille="${g.key}" data-cat="personne_supplementaire" data-field="tarif" value="${suppEntry.tarif}" /></td>
+          <td class="narrow"><input type="number" min="0" step="100" data-grille="${g.key}" data-cat="personne_supplementaire" data-field="taxe" value="${suppEntry.taxe}" /></td>
+        </tr>`;
+
+      const enfantsOffertsHtml =
+        g.key === 'tour_operator'
+          ? `<label class="checkbox-line" style="margin-top:6px;"><input type="checkbox" id="set_enfants_offerts_tour_operator" ${grilleData.enfants_moins_10_ans_offert ? 'checked' : ''} /> Enfants de moins de 10 ans offerts</label>`
+          : '';
+
+      return `
+        <div class="settings-grille-title">${g.label}</div>
+        <table class="settings-table">
+          <thead><tr><th>Catégorie</th><th>Tarif TTC (F CFA)</th><th>Taxe séjour (F CFA)</th></tr></thead>
+          <tbody>${rows}${suppRow}</tbody>
+        </table>
+        ${enfantsOffertsHtml}
+      `;
+    })
+    .join('');
+}
+
+function formuleRowInnerHtml(f) {
+  const currentTypes = f ? (Array.isArray(f.types) ? f.types : f.type ? [f.type] : []) : [];
+  const typeCheckboxes = Object.entries(EVENT_TYPE_LABELS_FR)
+    .map(
+      ([code, label]) =>
+        `<label class="checkbox-line" style="margin:2px 0;"><input type="checkbox" class="formule-type-cb" value="${code}" ${currentTypes.includes(code) ? 'checked' : ''} /> ${label.charAt(0).toUpperCase() + label.slice(1)}</label>`
+    )
+    .join('');
+  const isForfait = f ? !!f.is_forfait : false;
+  return `
+    <td><div style="display:flex; flex-direction:column;">${typeCheckboxes}</div></td>
+    <td><input type="text" class="formule-nom" value="${escapeAttr(f ? f.nom : '')}" placeholder="ex: Brunch Buffet" /></td>
+    <td class="narrow">
+      <input type="number" min="0" step="500" class="formule-tarif" value="${f ? f.tarif_personne : ''}" />
+      <label class="checkbox-line" style="margin-top:4px;"><input type="checkbox" class="formule-forfait-cb" ${isForfait ? 'checked' : ''} /> Forfait fixe</label>
+    </td>
+    <td class="narrow"><input type="number" min="0" step="500" class="formule-tarif-enfant" value="${f ? (f.tarif_enfant || 0) : 0}" ${isForfait ? 'disabled' : ''} /></td>
+    <td><input type="text" class="formule-description" value="${escapeAttr(f ? f.description : '')}" placeholder="ex: buffet + boissons softs" /></td>
+    <td class="settings-row-actions"><button type="button" class="btn-remove-room remove-formule-btn" title="Retirer">✕</button></td>`;
+}
+
+function wireFormuleRowRemovals() {
+  document.querySelectorAll('#formulesTableBody .remove-formule-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => e.target.closest('tr').remove());
+  });
+  document.querySelectorAll('#formulesTableBody .formule-forfait-cb').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      const enfantField = cb.closest('tr').querySelector('.formule-tarif-enfant');
+      enfantField.disabled = cb.checked;
+      if (cb.checked) enfantField.value = 0;
+    });
+  });
+}
+
+function renderFormulesTable() {
+  const tbody = document.getElementById('formulesTableBody');
+  const formules = (SETTINGS.evenements && SETTINGS.evenements.formules) || [];
+  tbody.innerHTML = formules.map((f) => `<tr>${formuleRowInnerHtml(f)}</tr>`).join('');
+  wireFormuleRowRemovals();
+}
+
+function renderSettingsForm() {
+  document.getElementById('set_hotel_nom').value = SETTINGS.hotel.nom || '';
+  document.getElementById('set_hotel_adresse').value = SETTINGS.hotel.adresse || '';
+  document.getElementById('set_hotel_telephone').value = SETTINGS.hotel.telephone || '';
+  document.getElementById('set_hotel_site').value = SETTINGS.hotel.site || '';
+  document.getElementById('set_hotel_rccm').value = SETTINGS.hotel.rccm || '';
+  document.getElementById('set_hotel_ifu').value = SETTINGS.hotel.ifu || '';
+
+  document.getElementById('set_tva_pct').value = SETTINGS.finance.tva_pct;
+  document.getElementById('set_taux_usd').value = SETTINGS.finance.taux_usd;
+  document.getElementById('set_taux_eur').value = SETTINGS.finance.taux_eur;
+
+  renderAgentsTable();
+  renderRoomRatesTables();
+  renderFormulesTable();
+}
+
+function collectSettingsFromForm() {
+  const settings = {
+    hotel: {
+      nom: document.getElementById('set_hotel_nom').value.trim() || DEFAULT_SETTINGS.hotel.nom,
+      adresse: document.getElementById('set_hotel_adresse').value.trim(),
+      telephone: document.getElementById('set_hotel_telephone').value.trim(),
+      site: document.getElementById('set_hotel_site').value.trim(),
+      rccm: document.getElementById('set_hotel_rccm').value.trim(),
+      ifu: document.getElementById('set_hotel_ifu').value.trim(),
+    },
+    finance: {
+      tva_pct: parseFloat(document.getElementById('set_tva_pct').value) || 0,
+      taux_usd: parseFloat(document.getElementById('set_taux_usd').value) || 1,
+      taux_eur: parseFloat(document.getElementById('set_taux_eur').value) || 1,
+    },
+    agents: [],
+    chambres: { public: {}, societe: {}, tour_operator: {} },
+    evenements: { formules: [] },
+  };
+
+  document.querySelectorAll('#agentsTableBody tr').forEach((tr) => {
+    const code = tr.querySelector('.agent-code').value.trim().toUpperCase();
+    const prenom = tr.querySelector('.agent-prenom').value.trim();
+    if (code) settings.agents.push({ code, prenom });
+  });
+  if (settings.agents.length === 0) settings.agents = deepClone(DEFAULT_SETTINGS.agents);
+
+  document.querySelectorAll('#roomRatesTables input[data-grille]').forEach((input) => {
+    const grille = input.dataset.grille;
+    const cat = input.dataset.cat;
+    const field = input.dataset.field;
+    if (!settings.chambres[grille][cat]) settings.chambres[grille][cat] = { tarif: 0, taxe: 0 };
+    settings.chambres[grille][cat][field] = parseNombre(input.value);
+  });
+  const enfantsOffertsEl = document.getElementById('set_enfants_offerts_tour_operator');
+  if (enfantsOffertsEl) settings.chambres.tour_operator.enfants_moins_10_ans_offert = enfantsOffertsEl.checked;
+
+  document.querySelectorAll('#formulesTableBody tr').forEach((tr) => {
+    const types = Array.from(tr.querySelectorAll('.formule-type-cb:checked')).map((cb) => cb.value);
+    const nom = tr.querySelector('.formule-nom').value.trim();
+    const tarif_personne = parseNombre(tr.querySelector('.formule-tarif').value);
+    const is_forfait = tr.querySelector('.formule-forfait-cb').checked;
+    const tarif_enfant = is_forfait ? 0 : parseNombre(tr.querySelector('.formule-tarif-enfant').value);
+    const description = tr.querySelector('.formule-description').value.trim();
+    if (nom || tarif_personne) {
+      settings.evenements.formules.push({ types, nom, tarif_personne, tarif_enfant, is_forfait, description });
+    }
+  });
+
+  return settings;
+}
+
+function setupSettingsActions() {
+  document.getElementById('addAgentBtn').addEventListener('click', () => {
+    const tbody = document.getElementById('agentsTableBody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = agentRowInnerHtml(null);
+    tbody.appendChild(tr);
+    tr.querySelector('.remove-agent-btn').addEventListener('click', () => tr.remove());
+  });
+
+  document.getElementById('addFormuleBtn').addEventListener('click', () => {
+    const tbody = document.getElementById('formulesTableBody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = formuleRowInnerHtml(null);
+    tbody.appendChild(tr);
+    tr.querySelector('.remove-formule-btn').addEventListener('click', () => tr.remove());
+    tr.querySelector('.formule-forfait-cb').addEventListener('change', (e) => {
+      const enfantField = tr.querySelector('.formule-tarif-enfant');
+      enfantField.disabled = e.target.checked;
+      if (e.target.checked) enfantField.value = 0;
+    });
+  });
+
+  document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+    SETTINGS = collectSettingsFromForm();
+    try {
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(SETTINGS));
+    } catch (err) {
+      console.error("Erreur d'enregistrement des paramètres", err);
+    }
+    applySettings();
+    reapplyAllRoomRates();
+    document.querySelectorAll('#prestationsList .room-row').forEach((row) => populatePrestationFormuleSelect(row));
+
+    const hint = document.getElementById('saveSettingsHint');
+    hint.textContent = 'Paramètres enregistrés et appliqués ✓';
+    hint.style.color = 'var(--success)';
+    hint.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  document.getElementById('resetSettingsBtn').addEventListener('click', () => {
+    if (!window.confirm('Réinitialiser tous les paramètres aux valeurs par défaut ? Cette action est irréversible.')) return;
+    SETTINGS = deepClone(DEFAULT_SETTINGS);
+    localStorage.removeItem(SETTINGS_STORAGE_KEY);
+    applySettings();
+    renderSettingsForm();
+
+    const hint = document.getElementById('saveSettingsHint');
+    hint.textContent = 'Paramètres réinitialisés aux valeurs par défaut.';
+    hint.style.color = 'var(--warn)';
+    hint.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+}
+
+/* =========================================================================
+   ONGLET PLANNING — vue calendrier combinée (arrivées/départs de chambres
+   + événements). Purement dérivée des données existantes (réservations et
+   événements), aucun stockage propre.
+   ========================================================================= */
+
+let calendarCurrentDate = new Date();
+let calendarSelectedDate = null;
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function isoFromYMD(y, m, d) {
+  return `${y}-${pad2(m + 1)}-${pad2(d)}`;
+}
+
+function buildCalendarIndex() {
+  const index = {};
+  const ensure = (d) => (index[d] = index[d] || { arrivals: [], departures: [], events: [] });
+
+  getAllReservations().forEach((r) => {
+    if (r.statut === 'annulee') return;
+    (r.rooms || []).forEach((room) => {
+      const label = `${r.nom_client || '(sans nom)'} — ${room.type_chambre || 'Chambre'}`;
+      if (room.date_arrivee) ensure(room.date_arrivee).arrivals.push({ id: r.id, label });
+      if (room.date_depart) ensure(room.date_depart).departures.push({ id: r.id, label });
+    });
+    (r.prestations || []).forEach((p) => {
+      if (!p.date_evenement) return;
+      const typeLabel = EVENT_TYPE_LABELS[p.type_evenement] || 'ÉVÉNEMENT';
+      const label = `${typeLabel} — ${r.nom_client || '(sans nom)'}${p.heure ? ' à ' + p.heure : ''}`;
+      ensure(p.date_evenement).events.push({ id: r.id, label });
+    });
+  });
+
+  return index;
+}
+
+function renderCalendar() {
+  const year = calendarCurrentDate.getFullYear();
+  const month = calendarCurrentDate.getMonth();
+  const label = calendarCurrentDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  document.getElementById('calendarMonthLabel').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+  const index = buildCalendarIndex();
+  const firstOfMonth = new Date(year, month, 1);
+  const firstWeekday = (firstOfMonth.getDay() + 6) % 7; // lundi = 0
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const now = new Date();
+  const todayIso = isoFromYMD(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const cells = [];
+  for (let i = 0; i < firstWeekday; i++) cells.push('<div class="cal-cell cal-cell-empty"></div>');
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = isoFromYMD(year, month, d);
+    const dayData = index[iso] || { arrivals: [], departures: [], events: [] };
+    const totalItems = dayData.arrivals.length + dayData.departures.length + dayData.events.length;
+
+    const lines = [];
+    dayData.arrivals.forEach((a) => lines.push(`<div class="cal-item cal-item-arrival">→ ${escapeAttr(a.label)}</div>`));
+    dayData.departures.forEach((dep) => lines.push(`<div class="cal-item cal-item-departure">← ${escapeAttr(dep.label)}</div>`));
+    dayData.events.forEach((e) => lines.push(`<div class="cal-item cal-item-event">🎉 ${escapeAttr(e.label)}</div>`));
+    const shown = lines.slice(0, 3).join('');
+    const extra = totalItems > 3 ? `<div class="cal-item cal-item-more">+${totalItems - 3} autre(s)</div>` : '';
+
+    const isToday = iso === todayIso;
+    const isSelected = iso === calendarSelectedDate;
+    cells.push(`
+      <div class="cal-cell ${isToday ? 'cal-cell-today' : ''} ${isSelected ? 'cal-cell-selected' : ''}" data-date="${iso}">
+        <div class="cal-daynum">${d}</div>
+        ${shown}${extra}
+      </div>
+    `);
+  }
+
+  document.getElementById('calendarGrid').innerHTML = cells.join('');
+
+  document.querySelectorAll('.cal-cell[data-date]').forEach((cell) => {
+    cell.addEventListener('click', () => {
+      calendarSelectedDate = cell.dataset.date;
+      renderCalendar();
+      renderCalendarDayDetail();
+    });
+  });
+}
+
+function renderCalendarDayDetail() {
+  const container = document.getElementById('calendarDayDetail');
+  if (!calendarSelectedDate) {
+    container.innerHTML = '<div class="empty-state">Cliquez sur un jour du calendrier pour voir le détail.</div>';
+    return;
+  }
+  const index = buildCalendarIndex();
+  const dayData = index[calendarSelectedDate] || { arrivals: [], departures: [], events: [] };
+  const dateLabel = formatDateFr(calendarSelectedDate);
+
+  if (dayData.arrivals.length + dayData.departures.length + dayData.events.length === 0) {
+    container.innerHTML = `<h2 style="margin-bottom:10px;">${dateLabel}</h2><div class="empty-state">Rien de prévu ce jour-là.</div>`;
+    return;
+  }
+
+  const section = (title, items, cls) => {
+    if (items.length === 0) return '';
+    return `
+      <h3 style="font-size:13px; color: var(--ink-soft); text-transform:uppercase; letter-spacing:0.3px; margin:14px 0 6px 0;">${title}</h3>
+      ${items.map((it) => `<div class="cal-detail-item ${cls}" data-id="${it.id}">${escapeAttr(it.label)}</div>`).join('')}
+    `;
+  };
+
+  container.innerHTML = `
+    <h2 style="margin-bottom:4px;">${dateLabel}</h2>
+    ${section('Arrivées', dayData.arrivals, 'cal-detail-arrival')}
+    ${section('Départs', dayData.departures, 'cal-detail-departure')}
+    ${section('Événements', dayData.events, 'cal-detail-event')}
+  `;
+
+  container.querySelectorAll('.cal-detail-arrival, .cal-detail-departure').forEach((el) => {
+    el.addEventListener('click', () => loadReservationIntoForm(el.dataset.id));
+  });
+  container.querySelectorAll('.cal-detail-event').forEach((el) => {
+    el.addEventListener('click', () => loadReservationIntoForm(el.dataset.id));
+  });
+}
+
+function setupCalendar() {
+  document.getElementById('calPrevBtn').addEventListener('click', () => {
+    calendarCurrentDate = new Date(calendarCurrentDate.getFullYear(), calendarCurrentDate.getMonth() - 1, 1);
+    renderCalendar();
+  });
+  document.getElementById('calNextBtn').addEventListener('click', () => {
+    calendarCurrentDate = new Date(calendarCurrentDate.getFullYear(), calendarCurrentDate.getMonth() + 1, 1);
+    renderCalendar();
+  });
+  document.getElementById('calTodayBtn').addEventListener('click', () => {
+    const now = new Date();
+    calendarCurrentDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    calendarSelectedDate = isoFromYMD(now.getFullYear(), now.getMonth(), now.getDate());
+    renderCalendar();
+    renderCalendarDayDetail();
+  });
+  renderCalendar();
+  renderCalendarDayDetail();
+}
+
+/* =========================================================================
+   ONGLET TÂCHES DU SHIFT — checklist récurrente + tâches ponctuelles + notes,
+   propres à chaque jour, plus un rappel automatique des points en attente
+   (navette, garantie, BDC, rooming list) et des arrivées/départs du jour.
+   Persisté en localStorage, indépendant des réservations elles-mêmes.
+   ========================================================================= */
+
+const SHIFT_TASKS_STORAGE_KEY = 'maisonrouge_taches_shift'; // { [date]: { done: {taskId:true}, adhoc: [{id,label,done}], notes: '' } }
+const SHIFT_TEMPLATE_STORAGE_KEY = 'maisonrouge_taches_modeles'; // [{id, label}]
+
+const DEFAULT_SHIFT_TEMPLATE = [
+  { id: 'm1', label: "Vérifier les arrivées du jour et préparer les clés / bienvenues" },
+  { id: 'm2', label: "Vérifier les départs du jour et anticiper les late check-out" },
+  { id: 'm3', label: "Relancer les garanties de paiement en attente" },
+  { id: 'm4', label: "Confirmer les navettes aéroport (infos de vol reçues ou en attente)" },
+  { id: 'm5', label: "Relancer les bons de commande et rooming lists en attente" },
+  { id: 'm6', label: "Préparer / envoyer les proformas en attente" },
+  { id: 'm7', label: "Vérifier la caisse / le fond de caisse" },
+  { id: 'm8', label: "Transmettre les consignes importantes à la relève" },
+];
+
+let shiftSelectedDate = null;
+
+function todayIso() {
+  const now = new Date();
+  return isoFromYMD(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function getShiftTemplate() {
+  try {
+    const raw = localStorage.getItem(SHIFT_TEMPLATE_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) && parsed.length ? parsed : deepClone(DEFAULT_SHIFT_TEMPLATE);
+  } catch (e) {
+    return deepClone(DEFAULT_SHIFT_TEMPLATE);
+  }
+}
+
+function saveShiftTemplate(list) {
+  localStorage.setItem(SHIFT_TEMPLATE_STORAGE_KEY, JSON.stringify(list));
+}
+
+function getAllShiftDays() {
+  try {
+    const raw = localStorage.getItem(SHIFT_TASKS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveAllShiftDays(obj) {
+  localStorage.setItem(SHIFT_TASKS_STORAGE_KEY, JSON.stringify(obj));
+}
+
+function getShiftDayData(dateIso) {
+  const all = getAllShiftDays();
+  return all[dateIso] || { done: {}, adhoc: [], notes: '' };
+}
+
+function updateShiftDayData(dateIso, mutateFn) {
+  const all = getAllShiftDays();
+  const current = all[dateIso] || { done: {}, adhoc: [], notes: '' };
+  mutateFn(current);
+  all[dateIso] = current;
+  saveAllShiftDays(all);
+}
+
+function setupShiftTasks() {
+  const dateInput = document.getElementById('shiftDateInput');
+  dateInput.value = todayIso();
+  shiftSelectedDate = todayIso();
+
+  dateInput.addEventListener('change', () => {
+    shiftSelectedDate = dateInput.value || todayIso();
+    renderShiftDay();
+  });
+
+  document.getElementById('shiftTodayBtn').addEventListener('click', () => {
+    shiftSelectedDate = todayIso();
+    dateInput.value = shiftSelectedDate;
+    renderShiftDay();
+  });
+
+  document.getElementById('resetShiftChecksBtn').addEventListener('click', () => {
+    updateShiftDayData(shiftSelectedDate, (day) => {
+      day.done = {};
+      day.adhoc.forEach((t) => (t.done = false));
+    });
+    renderShiftDay();
+  });
+
+  document.getElementById('addRecurringTaskBtn').addEventListener('click', addRecurringTaskFromInput);
+  document.getElementById('newRecurringTaskInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addRecurringTaskFromInput(); }
+  });
+
+  document.getElementById('addAdHocTaskBtn').addEventListener('click', addAdHocTaskFromInput);
+  document.getElementById('newAdHocTaskInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addAdHocTaskFromInput(); }
+  });
+
+  const notesInput = document.getElementById('shiftNotesInput');
+  let notesDebounce;
+  notesInput.addEventListener('input', () => {
+    clearTimeout(notesDebounce);
+    notesDebounce = setTimeout(() => {
+      updateShiftDayData(shiftSelectedDate, (day) => { day.notes = notesInput.value; });
+      const hint = document.getElementById('shiftNotesHint');
+      hint.textContent = 'Enregistré ✓';
+      hint.style.color = 'var(--success)';
+    }, 400);
+  });
+
+  renderShiftDay();
+}
+
+function addRecurringTaskFromInput() {
+  const input = document.getElementById('newRecurringTaskInput');
+  const label = input.value.trim();
+  if (!label) return;
+  const template = getShiftTemplate();
+  template.push({ id: 't_' + Date.now() + '_' + Math.floor(Math.random() * 10000), label });
+  saveShiftTemplate(template);
+  input.value = '';
+  renderShiftDay();
+}
+
+function removeRecurringTask(taskId) {
+  const template = getShiftTemplate().filter((t) => t.id !== taskId);
+  saveShiftTemplate(template);
+  renderShiftDay();
+}
+
+function addAdHocTaskFromInput() {
+  const input = document.getElementById('newAdHocTaskInput');
+  const label = input.value.trim();
+  if (!label) return;
+  updateShiftDayData(shiftSelectedDate, (day) => {
+    day.adhoc.push({ id: 'a_' + Date.now() + '_' + Math.floor(Math.random() * 10000), label, done: false });
+  });
+  input.value = '';
+  renderShiftDay();
+}
+
+function renderTaskRow(id, label, done, onToggle, onRemove) {
+  const row = document.createElement('div');
+  row.className = 'task-row' + (done ? ' task-done' : '');
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = done;
+  checkbox.addEventListener('change', () => onToggle(checkbox.checked));
+
+  const labelEl = document.createElement('span');
+  labelEl.className = 'task-label';
+  labelEl.textContent = label;
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'task-remove';
+  removeBtn.textContent = '✕';
+  removeBtn.title = 'Retirer';
+  removeBtn.addEventListener('click', onRemove);
+
+  row.appendChild(checkbox);
+  row.appendChild(labelEl);
+  row.appendChild(removeBtn);
+  return row;
+}
+
+function renderShiftDay() {
+  if (!shiftSelectedDate) shiftSelectedDate = todayIso();
+  const dateInput = document.getElementById('shiftDateInput');
+  if (dateInput && dateInput.value !== shiftSelectedDate) dateInput.value = shiftSelectedDate;
+
+  const template = getShiftTemplate();
+  const dayData = getShiftDayData(shiftSelectedDate);
+
+  // ----- Checklist récurrente -----
+  const recurringContainer = document.getElementById('recurringTaskList');
+  recurringContainer.innerHTML = '';
+  template.forEach((t) => {
+    const done = !!dayData.done[t.id];
+    const row = renderTaskRow(
+      t.id,
+      t.label,
+      done,
+      (checked) => {
+        updateShiftDayData(shiftSelectedDate, (day) => {
+          day.done[t.id] = checked;
+        });
+        renderShiftDay();
+      },
+      () => removeRecurringTask(t.id)
+    );
+    recurringContainer.appendChild(row);
+  });
+  if (template.length === 0) {
+    recurringContainer.innerHTML = '<div class="empty-state">Aucune tâche récurrente — ajoutez-en ci-dessous.</div>';
+  }
+
+  // ----- Tâches ponctuelles -----
+  const adHocContainer = document.getElementById('adHocTaskList');
+  adHocContainer.innerHTML = '';
+  (dayData.adhoc || []).forEach((t) => {
+    const row = renderTaskRow(
+      t.id,
+      t.label,
+      !!t.done,
+      (checked) => {
+        updateShiftDayData(shiftSelectedDate, (day) => {
+          const item = day.adhoc.find((x) => x.id === t.id);
+          if (item) item.done = checked;
+        });
+        renderShiftDay();
+      },
+      () => {
+        updateShiftDayData(shiftSelectedDate, (day) => {
+          day.adhoc = day.adhoc.filter((x) => x.id !== t.id);
+        });
+        renderShiftDay();
+      }
+    );
+    adHocContainer.appendChild(row);
+  });
+  if (!dayData.adhoc || dayData.adhoc.length === 0) {
+    adHocContainer.innerHTML = '<div class="empty-state">Aucune tâche ponctuelle pour ce jour.</div>';
+  }
+
+  // ----- Progression -----
+  const totalTasks = template.length + (dayData.adhoc || []).length;
+  const doneTasks = template.filter((t) => dayData.done[t.id]).length + (dayData.adhoc || []).filter((t) => t.done).length;
+  const progressLabel = document.getElementById('shiftProgressLabel');
+  progressLabel.textContent = totalTasks > 0 ? `${doneTasks} / ${totalTasks} terminées` : '';
+
+  // ----- Notes -----
+  const notesInput = document.getElementById('shiftNotesInput');
+  notesInput.value = dayData.notes || '';
+  document.getElementById('shiftNotesHint').textContent = '';
+
+  renderShiftAlerts();
+}
+
+/**
+ * Liste "à surveiller aujourd'hui" : dérivée automatiquement des réservations
+ * (arrivées/départs du jour sélectionné, et éléments en attente quelle que
+ * soit leur date — navette, garantie, BDC, rooming list — pour ne rien
+ * laisser filer avant la fin du shift).
+ */
+function renderShiftAlerts() {
+  const container = document.getElementById('shiftAlertsList');
+  const reservations = getAllReservations().filter((r) => r.statut !== 'annulee');
+  const items = [];
+
+  reservations.forEach((r) => {
+    const nom = `${r.civilite || ''} ${r.nom_client || '(sans nom)'}`.trim();
+    (r.rooms || []).forEach((room) => {
+      if (room.date_arrivee === shiftSelectedDate) {
+        items.push({ id: r.id, label: `Arrivée — ${nom} (${room.type_chambre || 'chambre'})` });
+      }
+      if (room.date_depart === shiftSelectedDate) {
+        items.push({ id: r.id, label: `Départ — ${nom} (${room.type_chambre || 'chambre'})` });
+      }
+    });
+    (r.prestations || []).forEach((p) => {
+      if (p.date_evenement === shiftSelectedDate) {
+        const typeLabel = EVENT_TYPE_LABELS[p.type_evenement] || 'Événement';
+        items.push({ id: r.id, label: `${typeLabel} — ${nom}${p.heure ? ' à ' + p.heure : ''}` });
+      }
+    });
+    if ((r.rooms || []).length > 0) {
+      if (r.navette_statut === 'en_attente') items.push({ id: r.id, label: `Navette en attente — ${nom}` });
+      if (r.garantie_statut !== 'recue') items.push({ id: r.id, label: `Garantie en attente — ${nom}` });
+      if (r.bon_de_commande_requis && r.bon_de_commande_statut === 'en_attente') items.push({ id: r.id, label: `Bon de commande en attente — ${nom}` });
+      if (r.rooming_list_requise && r.rooming_list_statut !== 'recue') items.push({ id: r.id, label: `Rooming list en attente — ${nom}` });
+    }
+  });
+
+  if (items.length === 0) {
+    container.innerHTML = '<div class="empty-state">Rien à signaler pour le moment.</div>';
+    return;
+  }
+
+  container.innerHTML = items
+    .map((it) => `<div class="shift-alert-item" data-id="${it.id}">${escapeAttr(it.label)}</div>`)
+    .join('');
+
+  container.querySelectorAll('.shift-alert-item').forEach((el) => {
+    el.addEventListener('click', () => loadReservationIntoForm(el.dataset.id));
+  });
+}
+
+</script>
+</body>
+</html>
