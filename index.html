@@ -4,145 +4,380 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Arnauld | Espace de travail</title>
-
 <style>
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f4f5f7;
-  color: #202b3c;
-  min-height: 100vh;
+:root{
+  --bg:#f3f5fb;--card:#fff;--text:#1b2236;--muted:#5f6b85;--line:#dfe4f0;
+  --head1:#16203a;--head2:#233a6b;--a1:#2bb6d9;--a2:#6a5cff;--glow:rgba(43,182,217,.35);
+  color-scheme: light dark;
 }
-
-header {
-  background: #172538;
-  color: white;
-  padding: 35px 8%;
+@media (prefers-color-scheme: dark){
+  :root{--bg:#0d1120;--card:#161c33;--text:#eef1fb;--muted:#9aa5c4;--line:#27304f;--head1:#0a0e1c;--head2:#1a2650}
 }
-
-header h1 {
-  margin: 0;
-  font-size: 32px;
-  letter-spacing: 1px;
-}
-
-header p {
-  color: #b8c5d4;
-  margin-bottom: 0;
-}
-
-main {
-  max-width: 1050px;
-  margin: 55px auto;
-  padding: 0 22px;
-}
-
-.intro { margin-bottom: 30px; }
-
-.intro h2 { font-size: 25px; }
-
-.intro p { color: #697586; }
-
-.apps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
-}
-
-.app {
-  background: white;
-  padding: 27px;
-  border-radius: 13px;
-  border: 1px solid #e4e8ee;
-  box-shadow: 0 5px 18px rgba(20,35,55,.05);
-  transition: transform .2s, box-shadow .2s;
-}
-
-.app:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(20,35,55,.10);
-}
-
-.app .symbol {
-  font-size: 30px;
-  margin-bottom: 18px;
-}
-
-.app h3 { margin: 0 0 10px; }
-
-.app p {
-  color: #697586;
-  line-height: 1.5;
-  min-height: 45px;
-}
-
-.app a {
-  display: inline-block;
-  margin-top: 12px;
-  padding: 11px 18px;
-  background: #203b59;
-  color: white;
-  text-decoration: none;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.app a:hover { background: #315778; }
-
-footer {
-  text-align: center;
-  color: #8993a1;
-  padding: 30px 15px;
-  font-size: 12px;
-}
-
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+button,input,select,textarea{font:inherit}
+header{position:relative;overflow:hidden;color:#fff;padding:32px 7% 28px;background:linear-gradient(120deg,var(--head1),var(--head2)) center/cover}
+header::before{content:"";position:absolute;inset:0;opacity:.16;pointer-events:none;background:repeating-conic-gradient(from 0deg at 85% 120%,#fff 0 .6deg,transparent .6deg 6deg)}
+header::after{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,var(--glow),transparent 65%);animation:pulse 4s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.2);opacity:1}}
+.top{position:relative;z-index:1;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.logo{width:78px;height:78px;border-radius:50%;border:3px solid var(--a1);cursor:pointer;flex:none;background:linear-gradient(135deg,var(--a1),var(--a2)) center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;box-shadow:0 0 24px var(--glow);transition:transform .25s}
+.logo:hover{transform:rotate(-6deg) scale(1.06)}
+.titles h1{margin:0;font-size:32px;letter-spacing:1px}.titles h1 span{color:var(--a1)}
+.titles p{margin:4px 0 0;color:#c3cde6}
+.themes{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.themes button{border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.28);color:#fff;padding:7px 12px;border-radius:999px;cursor:pointer;font-size:13px;transition:.2s}
+.themes button:hover{background:rgba(255,255,255,.22)}
+.themes button.on{background:linear-gradient(90deg,var(--a1),var(--a2));border-color:transparent;font-weight:700}
+main{max-width:1100px;margin:30px auto 20px;padding:0 20px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.search{flex:1;min-width:200px;padding:12px 16px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);outline:none}
+.search:focus,.fld:focus{border-color:var(--a1);box-shadow:0 0 0 3px var(--glow)}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer;font-size:13px;transition:.2s}
+.btn:hover{border-color:var(--a1)}
+.btn.pri{background:linear-gradient(90deg,var(--a1),var(--a2));color:#fff;border-color:transparent;font-weight:700}
+.btn.dan{color:#e5484d}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--muted);padding:7px 14px;border-radius:999px;cursor:pointer;font-size:13px;transition:.2s}
+.chip:hover{border-color:var(--a1);color:var(--text)}
+.chip.on{background:linear-gradient(90deg,var(--a1),var(--a2));color:#fff;border-color:transparent;font-weight:700}
+h2.sec{font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:24px 0 12px}
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.app{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:transform .2s,box-shadow .2s,border-color .2s}
+.app:hover{transform:translateY(-5px);border-color:var(--a1);box-shadow:0 12px 28px var(--glow)}
+.thumb{height:110px;background:linear-gradient(135deg,var(--a1),var(--a2)) center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:44px}
+.body{padding:16px 20px 20px}
+.row{display:flex;gap:6px;position:absolute;right:10px;top:10px}
+.mini{background:rgba(0,0,0,.45);border:none;color:#fff;font-size:17px;cursor:pointer;border-radius:8px;width:32px;height:32px;transition:transform .2s}
+.mini:hover{transform:scale(1.15)}.mini.on{color:#ffc43a;text-shadow:0 0 10px rgba(255,196,58,.8)}
+.app h3{margin:0 0 6px;font-size:18px}
+.app p{margin:0 0 12px;color:var(--muted);line-height:1.45;min-height:40px;font-size:14px}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.5px}
+.b-actif{background:rgba(46,204,113,.18);color:#1fa35a}.b-test{background:rgba(255,170,30,.2);color:#c77700}.b-bientot{background:rgba(140,150,175,.2);color:var(--muted)}
+@media (prefers-color-scheme: dark){.b-actif{color:#4ee08e}.b-test{color:#ffb84d}}
+.cat{font-size:12px;color:var(--muted)}
+.go{display:inline-block;padding:10px 18px;border-radius:10px;color:#fff;text-decoration:none;font-size:14px;font-weight:600;background:linear-gradient(90deg,var(--a1),var(--a2));transition:filter .2s}
+.go:hover{filter:brightness(1.12)}.go.off{background:var(--line);color:var(--muted);pointer-events:none}
+.empty{color:var(--muted);padding:30px;text-align:center;display:none}
+footer{text-align:center;color:var(--muted);padding:28px 15px;font-size:12px;letter-spacing:1px}
+/* fenêtres */
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--text);width:min(94vw,560px);padding:22px;max-height:90vh;overflow:auto}
+dialog::backdrop{background:rgba(5,8,20,.6)}
+dialog h3{margin:0 0 14px}
+.lbl{display:block;font-size:12px;color:var(--muted);margin:12px 0 4px;text-transform:uppercase;letter-spacing:.8px}
+.fld{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);outline:none}
+input[type=color]{padding:2px;height:42px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.th{width:64px;height:64px;border-radius:10px;border:2px solid var(--line);background:var(--bg) center/cover no-repeat;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:22px;position:relative}
+.th.sel{border-color:var(--a1);box-shadow:0 0 0 3px var(--glow)}
+.th .x{position:absolute;top:-7px;right:-7px;background:#e5484d;color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer}
+.crow{display:flex;gap:8px;margin-bottom:8px}
+.note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
+#file{display:none}
 </style>
 </head>
-
 <body>
 
-<header>
-  <h1>Arnauld.</h1>
-  <p>Espace personnel de travail et de suivi</p>
+<header id="hd">
+  <div class="top">
+    <div class="logo" id="logo" title="Cliquer pour changer la photo">A</div>
+    <div class="titles"><h1>Arnauld<span>.</span></h1><p>Espace personnel de travail et de suivi</p></div>
+    <div class="themes" id="themes"></div>
+  </div>
+  <input type="file" id="file" accept="image/*">
 </header>
 
 <main>
-  <section class="intro">
-    <h2>Bienvenue dans votre espace</h2>
-    <p>Sélectionnez l'application que vous souhaitez utiliser.</p>
-  </section>
-
-  <section class="apps">
-
-    <article class="app">
-      <div class="symbol">💱</div>
-      <h3>Suivi des changes</h3>
-      <p>Accéder à votre outil de suivi des opérations de change.</p>
-      <a href="suivi-changes.html">Ouvrir l'application →</a>
-    </article>
-
-    <article class="app">
-      <div class="symbol">📦</div>
-      <h3>Suivi des objets prêtés</h3>
-      <p>Consulter et gérer les prêts et les restitutions d'objets.</p>
-      <a href="SUIVI_OBJETS_PRETES.html">Ouvrir l'application →</a>
-    </article>
-
-    <article class="app">
-      <div class="symbol">⚡</div>
-      <h3>Suivi électricité</h3>
-      <p>Accéder à votre outil de suivi de la consommation électrique.</p>
-      <a href="suivi_electricite_03.html">Ouvrir l'application →</a>
-    </article>
-
-  </section>
+  <div class="tools">
+    <input class="search" id="q" type="search" placeholder="🔍 Rechercher une application…">
+    <button class="btn pri" data-act="newapp">＋ App</button>
+    <button class="btn" data-act="cats">🗂 Catégories</button>
+    <button class="btn" data-act="lib">🖼 Images</button>
+    <button class="btn" data-act="backup">💾 Sauvegarde</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div id="favSection" style="display:none"><h2 class="sec">⭐ Favoris</h2><div class="apps" id="favGrid"></div></div>
+  <h2 class="sec">Toutes les applications</h2>
+  <div class="apps" id="grid"></div>
+  <div class="empty" id="empty">Aucune application ne correspond.</div>
 </main>
+<footer>ARNAULD · ESPACE PERSONNEL</footer>
+<dialog id="dlg"></dialog>
 
-<footer>
-  ARNAULD · ESPACE PERSONNEL
-</footer>
+<script>
+/* Apps de départ : les nouvelles lignes ajoutées ici apparaissent automatiquement.
+   (Tu peux aussi tout faire avec le bouton « ＋ App ».) statut : actif | test | bientot */
+const APPS = [
+  { nom:"Suivi des changes", icone:"💱", desc:"Suivi des opérations de change.", lien:"suivi-changes.html", cat:"", statut:"actif" },
+  { nom:"Suivi des objets prêtés", icone:"📦", desc:"Gérer les prêts et les restitutions d’objets.", lien:"SUIVI_OBJETS_PRETES.html", cat:"", statut:"actif" },
+  { nom:"Suivi électricité", icone:"⚡", desc:"Suivi de la consommation électrique.", lien:"suivi_electricite_03.html", cat:"", statut:"actif" },
+  { nom:"Réservations Maison Rouge", icone:"🏨", desc:"Suivi des réservations de Maison Rouge.", lien:"Réservations-Maison-Rouge.html", cat:"", statut:"actif" }
+];
+const BASE_THEMES = [
+  {id:"slime", nom:"💧 Slime", a1:"#2bb6d9", a2:"#6a5cff"},
+  {id:"ninja", nom:"🍥 Ninja", a1:"#ff8a1f", a2:"#2f6bff"},
+  {id:"shinigami", nom:"⚔️ Shinigami", a1:"#ff6a1a", a2:"#9aa3b8"},
+  {id:"spirit", nom:"👊 Spirit", a1:"#2ee59d", a2:"#1fa3ff"}
+];
+const LOGO_URL = ""; // logo permanent : nom d’une image du dépôt (ex. "logo.png")
 
+/* ---------- stockage ---------- */
+const store = {
+  get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+};
+const DB = {
+  open(){return this.p||(this.p=new Promise((res,rej)=>{const r=indexedDB.open("arnauld_hub",1);r.onupgradeneeded=()=>r.result.createObjectStore("imgs",{keyPath:"id"});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))},
+  async tx(mode,fn){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction("imgs",mode);const rq=fn(t.objectStore("imgs"));t.oncomplete=()=>res(rq&&rq.result);t.onerror=()=>rej(t.error)})},
+  all(){return this.tx("readonly",s=>s.getAll())},
+  put(o){return this.tx("readwrite",s=>s.put(o))},
+  del(id){return this.tx("readwrite",s=>s.delete(id))},
+  clear(){return this.tx("readwrite",s=>s.clear())}
+};
+
+let S, IMGS = {}, cat = "Tout", query = "", W = {};
+const $ = id => document.getElementById(id);
+const LABELS = {actif:"ACTIF", test:"EN TEST", bientot:"BIENTÔT"};
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+const save = () => store.set("arnauld_state", S);
+const bg = id => IMGS[id] ? `style="background-image:url('${IMGS[id]}')"` : "";
+
+function initState(){
+  S = Object.assign({apps:[], cats:[], themes:[], theme:"slime", favs:store.get("arnauld_favs",[]), removed:[]}, store.get("arnauld_state",{}));
+  APPS.forEach(a => { if(!S.removed.includes(a.lien) && !S.apps.some(x => x.lien === a.lien)) S.apps.push({...a}); });
+  S.apps.forEach(a => { if(a.cat && !S.cats.includes(a.cat)) S.cats.push(a.cat); });
+}
+const allThemes = () => [...BASE_THEMES, ...S.themes];
+const curTheme = () => allThemes().find(t => t.id === S.theme) || BASE_THEMES[0];
+
+/* ---------- images ---------- */
+function shrink(file, max=700){
+  return new Promise(res => {
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const f = Math.min(1, max/Math.max(img.width,img.height)), c = document.createElement("canvas");
+      c.width = Math.round(img.width*f); c.height = Math.round(img.height*f);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",.82));
+    };
+    img.onerror = () => res(null); img.src = u;
+  });
+}
+async function addImages(files){
+  let last = null;
+  for(const f of files){
+    const d = await shrink(f); if(!d) continue;
+    const id = uid("i_"); IMGS[id] = d; last = id;
+    try{ await DB.put({id, data:d}); }catch(e){}
+  }
+  return last;
+}
+function strip(sel){
+  return `<div class="strip" id="strip"><div class="th ${!sel?"sel":""}" data-i="" title="Aucune">∅</div>` +
+    Object.keys(IMGS).map(id => `<div class="th ${id===sel?"sel":""}" data-i="${id}" ${bg(id)}></div>`).join("") +
+    `<label class="th" title="Ajouter des images">＋<input type="file" accept="image/*" multiple hidden id="stripUp"></label></div>`;
+}
+function refreshStrip(){ $("strip").outerHTML = strip(W.img); }
+
+/* ---------- rendu ---------- */
+function card(a){
+  const fav = S.favs.includes(a.lien), off = a.statut === "bientot";
+  return `<article class="app">
+    <div class="thumb" ${bg(a.img)}>${a.img ? "" : esc(a.icone||"🧩")}</div>
+    <div class="row"><button class="mini ${fav?"on":""}" data-act="fav" data-l="${esc(a.lien)}" title="Favori">${fav?"★":"☆"}</button>
+      <button class="mini" data-act="editapp" data-l="${esc(a.lien)}" title="Modifier">✎</button></div>
+    <div class="body"><h3>${esc(a.nom)}</h3><p>${esc(a.desc)}</p>
+    <div class="meta"><span class="badge b-${a.statut}">${LABELS[a.statut]||""}</span><span class="cat">${esc(a.cat||"Divers")}</span></div>
+    <a class="go ${off?"off":""}" href="${off?"#":esc(a.lien)}">${off?"Bientôt disponible":"Ouvrir l’application →"}</a></div>
+  </article>`;
+}
+function render(){
+  const q = query.trim().toLowerCase();
+  const list = S.apps.filter(a => (cat==="Tout" || (a.cat||"Divers")===cat) && (!q || (a.nom+" "+a.desc+" "+a.cat).toLowerCase().includes(q)));
+  const fl = list.filter(a => S.favs.includes(a.lien));
+  $("favSection").style.display = fl.length ? "block" : "none";
+  $("favGrid").innerHTML = fl.map(card).join("");
+  $("grid").innerHTML = list.map(card).join("");
+  $("empty").style.display = list.length ? "none" : "block";
+}
+function renderChips(){
+  const cats = ["Tout", ...S.cats]; if(S.apps.some(a => !a.cat)) cats.push("Divers");
+  if(!cats.includes(cat)) cat = "Tout";
+  $("chips").innerHTML = cats.map(c => `<button class="chip ${c===cat?"on":""}" data-act="chip" data-c="${esc(c)}">${esc(c)}</button>`).join("");
+}
+const rgba = (h,a) => { const n = parseInt(h.slice(1),16); return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`; };
+function applyTheme(){
+  const t = curTheme(), r = document.documentElement.style;
+  r.setProperty("--a1", t.a1); r.setProperty("--a2", t.a2); r.setProperty("--glow", rgba(t.a1,.35));
+  $("hd").style.backgroundImage = IMGS[t.img] ? `linear-gradient(rgba(8,12,26,.5),rgba(8,12,26,.72)),url('${IMGS[t.img]}')` : "";
+  $("themes").innerHTML = allThemes().map(x => `<button class="${x.id===t.id?"on":""}" data-act="theme" data-t="${x.id}">${esc(x.nom)}</button>`).join("") +
+    (S.themes.some(x => x.id===t.id) ? `<button data-act="edittheme" title="Modifier ce thème">✎</button>` : "") +
+    `<button data-act="newtheme" title="Créer un thème">＋ Thème</button>`;
+}
+
+/* ---------- fenêtres ---------- */
+const dlg = $("dlg");
+function openDlg(html){ dlg.innerHTML = html; if(!dlg.open) dlg.showModal(); }
+const closeBtn = `<button class="btn" data-act="close">Fermer</button>`;
+
+function appDlg(lien){
+  const a = lien ? S.apps.find(x => x.lien === lien) : null;
+  W = {mode:"app", old:lien||null, img:a?a.img:""};
+  const cats = S.cats.map(c => `<option ${a&&a.cat===c?"selected":""}>${esc(c)}</option>`).join("");
+  openDlg(`<h3>${a?"Modifier l’application":"Nouvelle application"}</h3>
+    <div class="two"><div><label class="lbl">Nom</label><input class="fld" id="f_nom" value="${esc(a?a.nom:"")}"></div>
+    <div><label class="lbl">Icône (emoji, si pas d’image)</label><input class="fld" id="f_ico" value="${esc(a?a.icone:"🧩")}"></div></div>
+    <label class="lbl">Description</label><input class="fld" id="f_desc" value="${esc(a?a.desc:"")}">
+    <label class="lbl">Lien (nom du fichier .html)</label><input class="fld" id="f_lien" value="${esc(a?a.lien:"")}" placeholder="mon-app.html">
+    <div class="two"><div><label class="lbl">Catégorie</label><select class="fld" id="f_cat"><option value="">Divers</option>${cats}</select></div>
+    <div><label class="lbl">Statut</label><select class="fld" id="f_stat">${["actif","test","bientot"].map(s => `<option value="${s}" ${a&&a.statut===s?"selected":""}>${LABELS[s]}</option>`).join("")}</select></div></div>
+    <label class="lbl">Image de l’app (banque d’images)</label>${strip(W.img)}
+    <div class="acts">${a?`<button class="btn dan" data-act="delapp">Supprimer</button>`:""}${closeBtn}<button class="btn pri" data-act="saveapp">Enregistrer</button></div>`);
+}
+function saveApp(){
+  const lien = $("f_lien").value.trim(), nom = $("f_nom").value.trim();
+  if(!lien || !nom){ alert("Le nom et le lien sont obligatoires."); return; }
+  if(lien !== W.old && S.apps.some(x => x.lien === lien)){ alert("Ce lien existe déjà."); return; }
+  const o = {nom, icone:$("f_ico").value.trim()||"🧩", desc:$("f_desc").value.trim(), lien, cat:$("f_cat").value, statut:$("f_stat").value, img:W.img||""};
+  if(W.old){ const i = S.apps.findIndex(x => x.lien === W.old); S.apps[i] = o; S.favs = S.favs.map(l => l===W.old?lien:l); }
+  else S.apps.push(o);
+  save(); dlg.close(); renderChips(); render();
+}
+function delApp(){
+  if(!confirm("Supprimer cette application de l’index ? (le fichier .html n’est pas supprimé)")) return;
+  if(!S.removed.includes(W.old)) S.removed.push(W.old);
+  S.apps = S.apps.filter(x => x.lien !== W.old); S.favs = S.favs.filter(l => l !== W.old);
+  save(); dlg.close(); renderChips(); render();
+}
+
+function catsDlg(){
+  openDlg(`<h3>🗂 Mes catégories</h3>` +
+    (S.cats.map((c,i) => `<div class="crow"><input class="fld" id="c_${i}" value="${esc(c)}">
+      <button class="btn" data-act="rencat" data-i="${i}">OK</button><button class="btn dan" data-act="delcat" data-i="${i}">🗑</button></div>`).join("") || `<p class="note">Aucune catégorie pour l’instant.</p>`) +
+    `<label class="lbl">Nouvelle catégorie</label><div class="crow"><input class="fld" id="c_new" placeholder="Ex. Cuisine, Clients, Jeux…"><button class="btn pri" data-act="addcat">Ajouter</button></div>
+    <p class="note">Pour mettre une app dans une catégorie : ✎ sur sa carte, puis choisis la catégorie. Si tu supprimes une catégorie, ses apps passent dans « Divers ».</p>
+    <div class="acts">${closeBtn}</div>`);
+}
+
+function themeDlg(id){
+  const t = id ? S.themes.find(x => x.id === id) : null;
+  W = {mode:"theme", id:id||null, img:t?t.img:""};
+  openDlg(`<h3>${t?"Modifier le thème":"Nouveau thème"}</h3>
+    <label class="lbl">Nom (tu peux mettre un emoji)</label><input class="fld" id="t_nom" value="${esc(t?t.nom:"")}" placeholder="🌀 Mon univers">
+    <div class="two"><div><label class="lbl">Couleur 1</label><input class="fld" type="color" id="t_a1" value="${t?t.a1:"#ff5a8a"}"></div>
+    <div><label class="lbl">Couleur 2</label><input class="fld" type="color" id="t_a2" value="${t?t.a2:"#7a5cff"}"></div></div>
+    <label class="lbl">Image de fond de l’en-tête</label>${strip(W.img)}
+    <div class="acts">${t?`<button class="btn dan" data-act="deltheme">Supprimer</button>`:""}${closeBtn}<button class="btn pri" data-act="savetheme">Enregistrer</button></div>`);
+}
+function saveTheme(){
+  const nom = $("t_nom").value.trim(); if(!nom){ alert("Donne un nom au thème."); return; }
+  const o = {id:W.id||uid("t_"), nom, a1:$("t_a1").value, a2:$("t_a2").value, img:W.img||""};
+  if(W.id){ S.themes[S.themes.findIndex(x => x.id===W.id)] = o; } else S.themes.push(o);
+  S.theme = o.id; save(); dlg.close(); applyTheme();
+}
+
+function libDlg(){
+  W = {mode:"lib"};
+  const ids = Object.keys(IMGS);
+  openDlg(`<h3>🖼 Ma banque d’images</h3>
+    <div class="strip">${ids.map(id => `<div class="th" ${bg(id)}><button class="x" data-act="delimg" data-i="${id}">✕</button></div>`).join("")}
+    <label class="th" title="Ajouter des images">＋<input type="file" accept="image/*" multiple hidden id="libUp"></label></div>
+    <p class="note">${ids.length} image(s). Elles servent à illustrer tes apps et à décorer tes thèmes. Elles sont réduites automatiquement pour rester légères.</p>
+    <div class="acts">${closeBtn}</div>`);
+}
+async function delImg(id){
+  if(!confirm("Supprimer cette image ? Elle sera retirée des apps et thèmes qui l’utilisent.")) return;
+  delete IMGS[id]; try{ await DB.del(id); }catch(e){}
+  S.apps.forEach(a => { if(a.img===id) a.img = ""; }); S.themes.forEach(t => { if(t.img===id) t.img = ""; });
+  save(); libDlg(); render(); applyTheme();
+}
+
+function backupDlg(){
+  openDlg(`<h3>💾 Sauvegarde</h3>
+    <p class="note">Tes catégories, thèmes, images et favoris sont gardés <b>dans ce navigateur, sur cet appareil</b>. Pour les retrouver sur un autre appareil (ou après un nettoyage du navigateur), exporte un fichier puis importe-le là-bas.</p>
+    <div class="acts" style="justify-content:flex-start"><button class="btn pri" data-act="export">Exporter</button>
+    <label class="btn">Importer<input type="file" accept=".json,application/json" hidden id="impFile"></label>${closeBtn}</div>`);
+}
+function exportAll(){
+  const blob = new Blob([JSON.stringify({v:1, S, IMGS, logo:store.get("arnauld_logo","")})], {type:"application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "arnauld-index-sauvegarde.json"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+async function importAll(file){
+  try{
+    const d = JSON.parse(await file.text());
+    if(!d || !d.S || !Array.isArray(d.S.apps)) throw 0;
+    if(!confirm("Remplacer les données actuelles par cette sauvegarde ?")) return;
+    S = Object.assign({apps:[],cats:[],themes:[],theme:"slime",favs:[],removed:[]}, d.S);
+    IMGS = d.IMGS || {};
+    try{ await DB.clear(); for(const id in IMGS) await DB.put({id, data:IMGS[id]}); }catch(e){}
+    if(d.logo) store.set("arnauld_logo", d.logo);
+    save(); setLogo(d.logo||""); dlg.close(); renderChips(); render(); applyTheme();
+  }catch(e){ alert("Fichier de sauvegarde invalide."); }
+}
+
+/* ---------- événements ---------- */
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-act]");
+  if(e.target === dlg){ dlg.close(); return; }
+  if(e.target.closest("#strip") && !el){
+    const th = e.target.closest(".th[data-i]");
+    if(th){ W.img = th.dataset.i; refreshStrip(); }
+    return;
+  }
+  if(!el) return;
+  const d = el.dataset;
+  switch(el.dataset.act){
+    case "fav": S.favs = S.favs.includes(d.l) ? S.favs.filter(x => x!==d.l) : [...S.favs, d.l]; save(); render(); break;
+    case "chip": cat = d.c; renderChips(); render(); break;
+    case "theme": S.theme = d.t; save(); applyTheme(); break;
+    case "newtheme": themeDlg(null); break;
+    case "edittheme": themeDlg(S.theme); break;
+    case "savetheme": saveTheme(); break;
+    case "deltheme": if(confirm("Supprimer ce thème ?")){ S.themes = S.themes.filter(x => x.id!==W.id); S.theme = "slime"; save(); dlg.close(); applyTheme(); } break;
+    case "newapp": appDlg(null); break;
+    case "editapp": appDlg(d.l); break;
+    case "saveapp": saveApp(); break;
+    case "delapp": delApp(); break;
+    case "cats": catsDlg(); break;
+    case "addcat": { const v = $("c_new").value.trim(); if(v && !S.cats.includes(v)){ S.cats.push(v); save(); renderChips(); } catsDlg(); break; }
+    case "rencat": { const i = +d.i, v = $("c_"+i).value.trim(), o = S.cats[i];
+      if(v && v!==o && !S.cats.includes(v)){ S.cats[i] = v; S.apps.forEach(a => { if(a.cat===o) a.cat = v; }); if(cat===o) cat = v; save(); renderChips(); render(); } catsDlg(); break; }
+    case "delcat": { const o = S.cats[+d.i]; if(confirm("Supprimer « "+o+" » ? Ses apps passent dans Divers.")){
+      S.cats.splice(+d.i,1); S.apps.forEach(a => { if(a.cat===o) a.cat = ""; }); save(); renderChips(); render(); catsDlg(); } break; }
+    case "lib": libDlg(); break;
+    case "delimg": delImg(d.i); break;
+    case "backup": backupDlg(); break;
+    case "export": exportAll(); break;
+    case "close": dlg.close(); break;
+  }
+});
+document.addEventListener("change", async e => {
+  if(e.target.id === "stripUp"){ const id = await addImages(e.target.files); if(id) W.img = id; refreshStrip(); }
+  else if(e.target.id === "libUp"){ await addImages(e.target.files); libDlg(); }
+  else if(e.target.id === "impFile" && e.target.files[0]) importAll(e.target.files[0]);
+});
+$("q").addEventListener("input", e => { query = e.target.value; render(); });
+
+/* ---------- logo ---------- */
+function setLogo(src){ const el = $("logo"); el.style.backgroundImage = src ? `url("${src}")` : ""; el.textContent = src ? "" : "A"; }
+$("logo").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", async e => {
+  const f = e.target.files[0]; if(!f) return;
+  const d = await shrink(f, 200); if(d){ store.set("arnauld_logo", d); setLogo(d); }
+});
+
+/* ---------- démarrage ---------- */
+(async () => {
+  initState();
+  try{ (await DB.all()).forEach(o => IMGS[o.id] = o.data); }catch(e){}
+  setLogo(LOGO_URL || store.get("arnauld_logo",""));
+  applyTheme(); renderChips(); render();
+})();
+</script>
 </body>
 </html>
