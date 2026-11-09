@@ -97,6 +97,7 @@ input[type=color]{padding:2px;height:42px}
     <button class="btn" data-act="cats">🗂 Catégories</button>
     <button class="btn" data-act="lib">🖼 Images</button>
     <button class="btn" data-act="backup">💾 Sauvegarde</button>
+    <button class="btn" data-act="cloud">☁️ Cloud</button>
   </div>
   <div class="chips" id="chips"></div>
   <div id="favSection" style="display:none"><h2 class="sec">⭐ Favoris</h2><div class="apps" id="favGrid"></div></div>
@@ -107,6 +108,9 @@ input[type=color]{padding:2px;height:42px}
 <footer>ARNAULD · ESPACE PERSONNEL</footer>
 <dialog id="dlg"></dialog>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 /* Apps de départ : les nouvelles lignes ajoutées ici apparaissent automatiquement.
    (Tu peux aussi tout faire avec le bouton « ＋ App ».) statut : actif | test | bientot */
@@ -123,6 +127,69 @@ const BASE_THEMES = [
   {id:"spirit", nom:"👊 Spirit", a1:"#2ee59d", a2:"#1fa3ff"}
 ];
 const LOGO_URL = ""; // logo permanent : nom d’une image du dépôt (ex. "logo.png")
+
+/* ---------- FIREBASE ----------
+   Colle ici la config de ton projet (Console Firebase > Paramètres du projet > Tes applications > Web).
+   Tant que apiKey est vide, l’app fonctionne en mode local uniquement. */
+const FIREBASE_CONFIG = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+const Cloud = {
+  on:false, user:null, timer:null, status:"Mode local (Firebase non configuré)",
+  init(){
+    if(!FIREBASE_CONFIG.apiKey || typeof firebase === "undefined") return false;
+    firebase.initializeApp(FIREBASE_CONFIG);
+    this.auth = firebase.auth(); this.db = firebase.firestore(); this.on = true;
+    this.status = "Non connecté";
+    return true;
+  },
+  ref(){ return this.db.collection("users").doc(this.user.uid); },
+  setStatus(s){ this.status = s; const el = document.getElementById("cloudStatus"); if(el) el.textContent = s; },
+  pushState(){
+    if(!this.on || !this.user) return;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(async () => {
+      try{
+        await this.ref().set({S:JSON.stringify(S), logo:store.get("arnauld_logo",""), t:Date.now()});
+        this.setStatus("✅ Synchronisé · " + this.user.email);
+      }catch(e){ this.setStatus("⚠️ Erreur de synchronisation : " + e.message); }
+    }, 600);
+  },
+  async pushImg(id, data){
+    if(!this.on || !this.user) return;
+    try{ await this.ref().collection("imgs").doc(id).set({data}); }catch(e){ this.setStatus("⚠️ Image non synchronisée : " + e.message); }
+  },
+  async delImg(id){
+    if(!this.on || !this.user) return;
+    try{ await this.ref().collection("imgs").doc(id).delete(); }catch(e){}
+  },
+  async pushAll(){
+    if(!this.on || !this.user) return;
+    for(const id in IMGS) await this.pushImg(id, IMGS[id]);
+    clearTimeout(this.timer);
+    await this.ref().set({S:JSON.stringify(S), logo:store.get("arnauld_logo",""), t:Date.now()});
+    this.setStatus("✅ Synchronisé · " + this.user.email);
+  },
+  async pull(){
+    this.setStatus("⏳ Synchronisation…");
+    const snap = await this.ref().get();
+    if(!snap.exists){ await this.pushAll(); return; }   // première connexion : on envoie les données locales
+    const d = snap.data();
+    S = Object.assign({apps:[],cats:[],themes:[],theme:"slime",favs:[],removed:[]}, JSON.parse(d.S));
+    IMGS = {};
+    (await this.ref().collection("imgs").get()).forEach(x => IMGS[x.id] = x.data().data);
+    store.set("arnauld_state", S);
+    store.set("arnauld_logo", d.logo || "");
+    try{ await DB.clear(); for(const id in IMGS) await DB.put({id, data:IMGS[id]}); }catch(e){}
+    setLogo(d.logo || ""); initState(); renderChips(); render(); applyTheme();
+    this.setStatus("✅ Synchronisé · " + this.user.email);
+  }
+};
 
 /* ---------- stockage ---------- */
 const store = {
@@ -143,7 +210,7 @@ const $ = id => document.getElementById(id);
 const LABELS = {actif:"ACTIF", test:"EN TEST", bientot:"BIENTÔT"};
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
-const save = () => store.set("arnauld_state", S);
+const save = () => { store.set("arnauld_state", S); Cloud.pushState(); };
 const bg = id => IMGS[id] ? `style="background-image:url('${IMGS[id]}')"` : "";
 
 function initState(){
@@ -173,6 +240,7 @@ async function addImages(files){
     const d = await shrink(f); if(!d) continue;
     const id = uid("i_"); IMGS[id] = d; last = id;
     try{ await DB.put({id, data:d}); }catch(e){}
+    Cloud.pushImg(id, d);
   }
   return last;
 }
@@ -291,7 +359,7 @@ function libDlg(){
 }
 async function delImg(id){
   if(!confirm("Supprimer cette image ? Elle sera retirée des apps et thèmes qui l’utilisent.")) return;
-  delete IMGS[id]; try{ await DB.del(id); }catch(e){}
+  delete IMGS[id]; try{ await DB.del(id); }catch(e){} Cloud.delImg(id);
   S.apps.forEach(a => { if(a.img===id) a.img = ""; }); S.themes.forEach(t => { if(t.img===id) t.img = ""; });
   save(); libDlg(); render(); applyTheme();
 }
@@ -301,6 +369,26 @@ function backupDlg(){
     <p class="note">Tes catégories, thèmes, images et favoris sont gardés <b>dans ce navigateur, sur cet appareil</b>. Pour les retrouver sur un autre appareil (ou après un nettoyage du navigateur), exporte un fichier puis importe-le là-bas.</p>
     <div class="acts" style="justify-content:flex-start"><button class="btn pri" data-act="export">Exporter</button>
     <label class="btn">Importer<input type="file" accept=".json,application/json" hidden id="impFile"></label>${closeBtn}</div>`);
+}
+function cloudDlg(){
+  if(!Cloud.on){
+    openDlg(`<h3>☁️ Cloud Firebase</h3><p class="note">Firebase n’est pas encore configuré : renseigne <b>FIREBASE_CONFIG</b> dans index.html. En attendant, les données restent dans ce navigateur.</p><div class="acts">${closeBtn}</div>`);
+    return;
+  }
+  if(Cloud.user){
+    openDlg(`<h3>☁️ Cloud Firebase</h3><p class="note" id="cloudStatus">${esc(Cloud.status)}</p>
+      <div class="acts"><button class="btn" data-act="cloudsync">Forcer l’envoi</button><button class="btn dan" data-act="cloudout">Se déconnecter</button>${closeBtn}</div>`);
+  } else {
+    openDlg(`<h3>☁️ Connexion</h3>
+      <label class="lbl">E-mail</label><input class="fld" id="cl_mail" type="email" autocomplete="username">
+      <label class="lbl">Mot de passe</label><input class="fld" id="cl_pw" type="password" autocomplete="current-password">
+      <p class="note" id="cloudStatus">${esc(Cloud.status)}</p>
+      <div class="acts">${closeBtn}<button class="btn pri" data-act="cloudin">Se connecter</button></div>`);
+  }
+}
+async function cloudLogin(){
+  try{ await Cloud.auth.signInWithEmailAndPassword($("cl_mail").value.trim(), $("cl_pw").value); dlg.close(); }
+  catch(e){ Cloud.setStatus("⚠️ Connexion impossible : " + e.message); }
 }
 function exportAll(){
   const blob = new Blob([JSON.stringify({v:1, S, IMGS, logo:store.get("arnauld_logo","")})], {type:"application/json"});
@@ -317,6 +405,7 @@ async function importAll(file){
     try{ await DB.clear(); for(const id in IMGS) await DB.put({id, data:IMGS[id]}); }catch(e){}
     if(d.logo) store.set("arnauld_logo", d.logo);
     save(); setLogo(d.logo||""); dlg.close(); renderChips(); render(); applyTheme();
+    Cloud.pushAll();
   }catch(e){ alert("Fichier de sauvegarde invalide."); }
 }
 
@@ -353,6 +442,10 @@ document.addEventListener("click", e => {
     case "delimg": delImg(d.i); break;
     case "backup": backupDlg(); break;
     case "export": exportAll(); break;
+    case "cloud": cloudDlg(); break;
+    case "cloudin": cloudLogin(); break;
+    case "cloudout": Cloud.auth.signOut().then(() => dlg.close()); break;
+    case "cloudsync": Cloud.pushAll(); break;
     case "close": dlg.close(); break;
   }
 });
@@ -368,7 +461,7 @@ function setLogo(src){ const el = $("logo"); el.style.backgroundImage = src ? `u
 $("logo").addEventListener("click", () => $("file").click());
 $("file").addEventListener("change", async e => {
   const f = e.target.files[0]; if(!f) return;
-  const d = await shrink(f, 200); if(d){ store.set("arnauld_logo", d); setLogo(d); }
+  const d = await shrink(f, 200); if(d){ store.set("arnauld_logo", d); setLogo(d); Cloud.pushState(); }
 });
 
 /* ---------- démarrage ---------- */
@@ -377,6 +470,13 @@ $("file").addEventListener("change", async e => {
   try{ (await DB.all()).forEach(o => IMGS[o.id] = o.data); }catch(e){}
   setLogo(LOGO_URL || store.get("arnauld_logo",""));
   applyTheme(); renderChips(); render();
+  if(Cloud.init()){
+    Cloud.auth.onAuthStateChanged(async u => {
+      Cloud.user = u;
+      if(u){ try{ await Cloud.pull(); }catch(e){ Cloud.setStatus("⚠️ " + e.message); } }
+      else { Cloud.setStatus("Non connecté"); cloudDlg(); }
+    });
+  }
 })();
 </script>
 </body>
