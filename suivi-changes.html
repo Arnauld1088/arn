@@ -142,6 +142,148 @@ td.actions .btn:last-child{margin-bottom:0}
   th{background:#eee;position:static}
 }
 </style>
+<!-- ☁️ Synchronisation Firebase (ajoutée) : les données de l'app sont copiées dans Firestore -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function(){
+  var ID = "changes", KEYS = ["suivi-changes-v1"], CH = 300000;
+  var CFG = {
+    apiKey: "AIzaSyCME6eS-qQvHtJbH_jdc3zC3lSE5t_gtoE",
+    authDomain: "espace-mr.firebaseapp.com",
+    projectId: "espace-mr",
+    storageBucket: "espace-mr.firebasestorage.app",
+    messagingSenderId: "240321592887",
+    appId: "1:240321592887:web:1e435bae8f9a18636289b2"
+  };
+  var LS; try{ LS = window.localStorage; }catch(e){ return; }
+  var P = Storage.prototype, _set = P.setItem, _rem = P.removeItem, _get = P.getItem;
+  var MK = "cloud_meta_" + ID;
+  var user = null, db = null, auth = null, rev = 0, remoteMeta = null, timer = null, busy = false, again = false, ui = null, last = "";
+
+  function gm(){ try{ return JSON.parse(_get.call(LS, MK)) || {t:0, dirty:false}; }catch(e){ return {t:0, dirty:false}; } }
+  function sm(o){ try{ _set.call(LS, MK, JSON.stringify(o)); }catch(e){} }
+  function st(s){ last = s; if(ui) ui.set(s); }
+  function col(){ return db.collection("users").doc(user.uid).collection("data"); }
+  function hasLocal(){ return KEYS.some(function(k){ return _get.call(LS, k) !== null; }); }
+
+  /* chaque écriture/suppression d'une clé de l'app déclenche un envoi */
+  function mark(){
+    rev++; var m = gm(); m.dirty = true; sm(m);
+    if(user){ clearTimeout(timer); timer = setTimeout(push, 800); st("⏳ Envoi…"); }
+  }
+  P.setItem = function(k){ var r = _set.apply(this, arguments); if(this === LS && KEYS.indexOf(k) > -1) mark(); return r; };
+  P.removeItem = function(k){ var r = _rem.apply(this, arguments); if(this === LS && KEYS.indexOf(k) > -1) mark(); return r; };
+
+  async function push(){
+    if(!user || !db) return;
+    if(busy){ again = true; return; }
+    busy = true;
+    try{
+      var r0 = rev, b = db.batch(), base = col(), nk = {}, t = Date.now();
+      KEYS.forEach(function(k, ki){
+        var s = _get.call(LS, k); if(s === null) return;
+        var n = Math.max(1, Math.ceil(s.length / CH)); nk[ki] = n;
+        for(var i = 0; i < n; i++) b.set(base.doc(ID + "__" + ki + "__" + i), {app:ID, k:ki, i:i, s:s.slice(i*CH, (i+1)*CH)});
+      });
+      var old = (remoteMeta && remoteMeta.keys) || {};
+      Object.keys(old).forEach(function(ki){ for(var i = (nk[ki] || 0); i < old[ki]; i++) b.delete(base.doc(ID + "__" + ki + "__" + i)); });
+      b.set(base.doc(ID + "__meta"), {app:ID, keys:nk, t:t, by:user.email || ""});
+      await b.commit();
+      remoteMeta = {keys:nk, t:t};
+      var m = gm(); m.t = t; m.dirty = (rev !== r0); sm(m);
+      st("✅ Synchronisé");
+    }catch(e){ console.warn("[cloud] envoi", e); st("⚠️ En attente (hors ligne ?)"); }
+    finally{ busy = false; if(again){ again = false; push(); } }
+  }
+
+  async function pull(){
+    st("⏳ Synchronisation…");
+    var base = col(), mm = await base.doc(ID + "__meta").get();
+    if(!mm.exists){ remoteMeta = null; if(hasLocal()) await push(); else st("✅ Connecté"); return; }
+    remoteMeta = mm.data();
+    var qs = await base.where("app", "==", ID).get(), parts = {};
+    qs.forEach(function(d){ var x = d.data(); if(d.id === ID + "__meta") return; (parts[x.k] = parts[x.k] || [])[x.i] = x.s; });
+    var remote = {}, ok = true;
+    Object.keys(remoteMeta.keys || {}).forEach(function(ki){
+      var arr = parts[ki] || [];
+      if(arr.length !== remoteMeta.keys[ki] || arr.some(function(s){ return typeof s !== "string"; })) ok = false;
+      else remote[ki] = arr.join("");
+    });
+    if(!ok){ st("⚠️ Données cloud incomplètes, réessaie"); return; }
+    var same = KEYS.every(function(k, ki){ var l = _get.call(LS, k), r = remote[ki]; return (r === undefined ? l === null : l === r); });
+    var m = gm();
+    if(same){ m.t = remoteMeta.t; m.dirty = false; sm(m); st("✅ Synchronisé"); return; }
+
+    var useCloud;
+    if(!hasLocal()) useCloud = true;
+    else if(m.t === 0) useCloud = confirm("Des données de cette application existent déjà dans le cloud.\n\nOK = utiliser les données du cloud (remplace celles de cet appareil)\nAnnuler = garder les données de cet appareil et écraser le cloud");
+    else if(m.dirty && remoteMeta.t > m.t) useCloud = !confirm("Cette application a été modifiée ici ET sur un autre appareil.\n\nOK = garder la version de CET appareil (écrase le cloud)\nAnnuler = prendre la version du cloud (les modifications faites ici sont perdues)");
+    else if(m.dirty) useCloud = false;
+    else useCloud = true;
+
+    if(!useCloud){ await push(); return; }
+    var t0 = 0; try{ t0 = +sessionStorage.getItem("cloud_rl_" + ID) || 0; }catch(e){}
+    if(Date.now() - t0 < 15000){ st("⚠️ Données cloud non appliquées (stockage plein ?)"); return; }
+    KEYS.forEach(function(k, ki){ if(remote[ki] !== undefined) _set.call(LS, k, remote[ki]); else _rem.call(LS, k); });
+    m.t = remoteMeta.t; m.dirty = false; sm(m);
+    try{ sessionStorage.setItem("cloud_rl_" + ID, String(Date.now())); }catch(e){}
+    location.reload();
+  }
+
+  /* petit bouton flottant (isolé dans un shadow DOM) */
+  function buildUI(){
+    var host = document.createElement("div"); host.id = "cloud-host"; document.body.appendChild(host);
+    var r = host.attachShadow({mode:"open"});
+    r.innerHTML = '<style>' +
+      '.pill{position:fixed;left:12px;bottom:12px;z-index:2147483000;font:600 12px/1 system-ui,Segoe UI,Arial,sans-serif;padding:9px 13px;border-radius:999px;border:1px solid #8885;background:#fff;color:#1b2236;cursor:pointer;box-shadow:0 2px 10px #0003}' +
+      '.box{position:fixed;left:12px;bottom:56px;z-index:2147483000;width:min(300px,calc(100vw - 24px));font:13px/1.4 system-ui,Segoe UI,Arial,sans-serif;background:#fff;color:#1b2236;border:1px solid #8885;border-radius:12px;padding:14px;box-shadow:0 6px 24px #0004}' +
+      '.box[hidden]{display:none}.box input{width:100%;box-sizing:border-box;margin:4px 0 8px;padding:8px;border:1px solid #8886;border-radius:8px;font:inherit;background:#fff;color:#1b2236}' +
+      '.box button{font:inherit;padding:8px 12px;border-radius:8px;border:1px solid #8886;background:#f3f5fb;color:#1b2236;cursor:pointer;margin-right:6px}.box button.p{background:#2bb6d9;color:#fff;border-color:transparent;font-weight:700}' +
+      '.m{font-size:12px;color:#5f6b85;margin:6px 0}' +
+      '@media (prefers-color-scheme:dark){.pill,.box{background:#161c33;color:#eef1fb}.box input,.box button{background:#0d1120;color:#eef1fb}.m{color:#9aa5c4}}' +
+      '@media print{.pill,.box{display:none}}' +
+      '</style><button class="pill" id="p" type="button">☁️</button><div class="box" id="b" hidden></div>';
+    var p = r.getElementById("p"), b = r.getElementById("b");
+    function render(){
+      if(!auth){ b.innerHTML = '<div class="m">Synchronisation indisponible (mode local uniquement).</div>'; return; }
+      if(user){
+        b.innerHTML = '<div><b>Cloud</b></div><div class="m" id="s"></div><div class="m">' + (user.email || "") + '</div><button id="f" type="button">Forcer l’envoi</button><button id="o" type="button">Déconnexion</button>';
+        r.getElementById("f").onclick = function(){ var m = gm(); m.dirty = true; sm(m); push(); };
+        r.getElementById("o").onclick = function(){ auth.signOut(); b.hidden = true; };
+      } else {
+        b.innerHTML = '<div><b>Connexion cloud</b></div><label class="m">E-mail</label><input id="e" type="email" autocomplete="username"><label class="m">Mot de passe</label><input id="w" type="password" autocomplete="current-password"><div class="m" id="s"></div><button class="p" id="g" type="button">Se connecter</button>';
+        r.getElementById("g").onclick = function(){
+          auth.signInWithEmailAndPassword(r.getElementById("e").value.trim(), r.getElementById("w").value)
+            .then(function(){ b.hidden = true; })
+            .catch(function(e){ r.getElementById("s").textContent = "⚠️ " + e.message; });
+        };
+      }
+      var s = r.getElementById("s"); if(s && user) s.textContent = last;
+    }
+    p.onclick = function(){ b.hidden = !b.hidden; if(!b.hidden) render(); };
+    return { set:function(s){ p.textContent = "☁️ " + s.replace(/^\S+\s/, ""); var x = r.getElementById("s"); if(x && user) x.textContent = s; }, show:function(){ b.hidden = false; render(); } };
+  }
+
+  function start(){
+    ui = buildUI();
+    try{
+      if(typeof firebase === "undefined") throw new Error("Firebase non chargé");
+      firebase.initializeApp(CFG);
+      auth = firebase.auth(); db = firebase.firestore();
+    }catch(e){ console.warn("[cloud]", e); st("Local"); return; }
+    st("Se connecter");
+    auth.onAuthStateChanged(function(u){
+      user = u;
+      if(u){ pull().catch(function(e){ console.warn("[cloud] pull", e); st("⚠️ " + e.message); }); }
+      else { st("Se connecter"); }
+    });
+    window.addEventListener("online", function(){ if(user && gm().dirty) push(); });
+  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();
+</script>
 </head>
 <body>
 <div class="wrap">
