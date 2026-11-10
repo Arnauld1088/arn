@@ -103,13 +103,34 @@ dialog .grid{grid-template-columns:1fr 1fr}
 }
 @media (max-width:480px){.grid,dialog .grid{grid-template-columns:1fr}.grid .wide{grid-column:auto}}
 </style>
-<!-- ☁️ Synchronisation Firebase (ajoutée) : les données de l'app sont copiées dans Firestore -->
+<!-- ☁️ Synchronisation Firebase (ajoutée) : les données de l'app sont copiées dans Firestore, découpées par période -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 (function(){
-  var ID = "objets", KEYS = ["suivi_objets_pretes_v1"], CH = 300000;
+  var ID = "objets", KEYS = ["suivi_objets_pretes_v1"], CH = 300000, BATCH = 400;
+  /* découpage propre à l'app : split(get) -> {nomDePartie: texte}, merge(parties) -> {cléLocale: texte} */
+  var AD = {
+  split: function(get){
+    var s = get("suivi_objets_pretes_v1"); if(s === null) return {};
+    var o = JSON.parse(s), out = {}, g = {}, rest = {};
+    (o.loans || []).forEach(function(l){
+      var m = /^\d{4}/.exec(l.dateSortie || l.creeLe || ""), k = m ? m[0] : "sans-date";
+      (g[k] = g[k] || []).push(l);
+    });
+    Object.keys(g).forEach(function(k){ out["loans_" + k] = JSON.stringify(g[k]); });
+    Object.keys(o).forEach(function(k){ if(k !== "loans") rest[k] = o[k]; });
+    out.settings = JSON.stringify(rest);
+    return out;
+  },
+  merge: function(p){
+    if(!p.settings) throw new Error("réglages manquants");
+    var o = JSON.parse(p.settings); o.loans = [];
+    Object.keys(p).sort().forEach(function(n){ if(n.indexOf("loans_") === 0) o.loans = o.loans.concat(JSON.parse(p[n])); });
+    return {"suivi_objets_pretes_v1": JSON.stringify(o)};
+  }
+};
   var CFG = {
     apiKey: "AIzaSyCME6eS-qQvHtJbH_jdc3zC3lSE5t_gtoE",
     authDomain: "espace-mr.firebaseapp.com",
@@ -121,42 +142,101 @@ dialog .grid{grid-template-columns:1fr 1fr}
   var LS; try{ LS = window.localStorage; }catch(e){ return; }
   var P = Storage.prototype, _set = P.setItem, _rem = P.removeItem, _get = P.getItem;
   var MK = "cloud_meta_" + ID;
-  var user = null, db = null, auth = null, rev = 0, remoteMeta = null, timer = null, busy = false, again = false, ui = null, last = "";
+  var user = null, db = null, auth = null, rev = 0, remoteMeta = null, timer = null, busy = false, again = false, againForce = false, ui = null, last = "";
 
   function gm(){ try{ return JSON.parse(_get.call(LS, MK)) || {t:0, dirty:false}; }catch(e){ return {t:0, dirty:false}; } }
   function sm(o){ try{ _set.call(LS, MK, JSON.stringify(o)); }catch(e){} }
   function st(s){ last = s; if(ui) ui.set(s); }
   function col(){ return db.collection("users").doc(user.uid).collection("data"); }
+  function did(n, i){ return ID + "__p__" + n + "__" + i; }
   function hasLocal(){ return KEYS.some(function(k){ return _get.call(LS, k) !== null; }); }
+  function hash(s){ var h = 2166136261 >>> 0; for(var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36) + "." + s.length; }
+
+  /* ---- découpage / réassemblage ---- */
+  function splitWith(get){
+    try{ return AD.split(get); }
+    catch(e){ var o = {}; KEYS.forEach(function(k, i){ var v = get(k); if(v !== null) o["raw" + i] = v; }); return o; }
+  }
+  function localParts(){ return splitWith(function(k){ return _get.call(LS, k); }); }
+  function mergeParts(parts){
+    var raw = {}, rest = {}, out = {};
+    Object.keys(parts).forEach(function(n){ var m = /^raw(\d+)$/.exec(n); if(m) raw[KEYS[m[1]]] = parts[n]; else rest[n] = parts[n]; });
+    if(Object.keys(rest).length) out = AD.merge(rest);
+    Object.keys(raw).forEach(function(k){ out[k] = raw[k]; });
+    return out;
+  }
+  function sameParts(lp, rp){      /* rp : {nom: {h:…}} */
+    var a = Object.keys(lp), b = Object.keys(rp);
+    return a.length === b.length && a.every(function(n){ return rp[n] && rp[n].h === hash(lp[n]); });
+  }
 
   /* chaque écriture/suppression d'une clé de l'app déclenche un envoi */
   function mark(){
     rev++; var m = gm(); m.dirty = true; sm(m);
-    if(user){ clearTimeout(timer); timer = setTimeout(push, 800); st("⏳ Envoi…"); }
+    if(user){ clearTimeout(timer); timer = setTimeout(function(){ push(); }, 800); st("⏳ Envoi…"); }
   }
   P.setItem = function(k){ var r = _set.apply(this, arguments); if(this === LS && KEYS.indexOf(k) > -1) mark(); return r; };
   P.removeItem = function(k){ var r = _rem.apply(this, arguments); if(this === LS && KEYS.indexOf(k) > -1) mark(); return r; };
 
-  async function push(){
+  async function commit(ops){
+    for(var a = 0; a < ops.length; a += BATCH){
+      var b = db.batch();
+      ops.slice(a, a + BATCH).forEach(function(o){ if(o[0] === "s") b.set(o[1], o[2]); else b.delete(o[1]); });
+      await b.commit();
+    }
+  }
+
+  /* envoi incrémental : seules les parties modifiées (ex. le mois en cours) sont réécrites */
+  async function push(force){
     if(!user || !db) return;
-    if(busy){ again = true; return; }
+    if(busy){ again = true; if(force) againForce = true; return; }
     busy = true;
     try{
-      var r0 = rev, b = db.batch(), base = col(), nk = {}, t = Date.now();
-      KEYS.forEach(function(k, ki){
-        var s = _get.call(LS, k); if(s === null) return;
-        var n = Math.max(1, Math.ceil(s.length / CH)); nk[ki] = n;
-        for(var i = 0; i < n; i++) b.set(base.doc(ID + "__" + ki + "__" + i), {app:ID, k:ki, i:i, s:s.slice(i*CH, (i+1)*CH)});
+      var r0 = rev, parts = localParts(), np = {}, ops = [], base = col(), t = Date.now();
+      var legacy = !!(remoteMeta && remoteMeta.keys && !remoteMeta.parts);
+      var oldAll = (remoteMeta && remoteMeta.parts) || {}, old = force ? {} : oldAll;
+      Object.keys(parts).forEach(function(name){
+        var s = parts[name], h = hash(s), n = Math.max(1, Math.ceil(s.length / CH));
+        np[name] = {n:n, h:h};
+        var o = old[name];
+        if(!o || o.h !== h) for(var i = 0; i < n; i++) ops.push(["s", base.doc(did(name, i)), {app:ID, p:name, i:i, s:s.slice(i * CH, (i + 1) * CH)}]);
+        if(oldAll[name]) for(var j = n; j < oldAll[name].n; j++) ops.push(["d", base.doc(did(name, j))]);
       });
-      var old = (remoteMeta && remoteMeta.keys) || {};
-      Object.keys(old).forEach(function(ki){ for(var i = (nk[ki] || 0); i < old[ki]; i++) b.delete(base.doc(ID + "__" + ki + "__" + i)); });
-      b.set(base.doc(ID + "__meta"), {app:ID, keys:nk, t:t, by:user.email || ""});
-      await b.commit();
-      remoteMeta = {keys:nk, t:t};
+      Object.keys(oldAll).forEach(function(name){ if(!np[name]) for(var i = 0; i < oldAll[name].n; i++) ops.push(["d", base.doc(did(name, i))]); });
+      /* ancien format (morceaux numérotés) : nettoyé à la migration */
+      if(legacy) Object.keys(remoteMeta.keys).forEach(function(ki){ for(var i = 0; i < remoteMeta.keys[ki]; i++) ops.push(["d", base.doc(ID + "__" + ki + "__" + i)]); });
+      if(ops.length || force || !remoteMeta){
+        await commit(ops);
+        await base.doc(ID + "__meta").set({app:ID, v:2, parts:np, t:t, by:user.email || ""});
+        remoteMeta = {v:2, parts:np, t:t};
+      } else t = remoteMeta.t;
       var m = gm(); m.t = t; m.dirty = (rev !== r0); sm(m);
       st("✅ Synchronisé");
     }catch(e){ console.warn("[cloud] envoi", e); st("⚠️ En attente (hors ligne ?)"); }
-    finally{ busy = false; if(again){ again = false; push(); } }
+    finally{ busy = false; if(again){ again = false; var f = againForce; againForce = false; push(f); } }
+  }
+
+  async function fetchParts(){
+    var qs = await col().where("app", "==", ID).get(), g = {};
+    qs.forEach(function(d){ var x = d.data(); if(d.id === ID + "__meta" || x.p === undefined) return; (g[x.p] = g[x.p] || [])[x.i] = x.s; });
+    var out = {}, ok = true;
+    Object.keys(remoteMeta.parts).forEach(function(n){
+      var arr = g[n] || [], c = remoteMeta.parts[n].n, s = "";
+      for(var i = 0; i < c; i++){ if(typeof arr[i] !== "string"){ ok = false; break; } s += arr[i]; }
+      out[n] = s;
+    });
+    return ok ? out : null;
+  }
+  async function fetchLegacy(){
+    var qs = await col().where("app", "==", ID).get(), g = {};
+    qs.forEach(function(d){ var x = d.data(); if(d.id === ID + "__meta" || x.k === undefined) return; (g[x.k] = g[x.k] || [])[x.i] = x.s; });
+    var out = {}, ok = true;
+    Object.keys(remoteMeta.keys || {}).forEach(function(ki){
+      var arr = g[ki] || [], c = remoteMeta.keys[ki], s = "";
+      for(var i = 0; i < c; i++){ if(typeof arr[i] !== "string"){ ok = false; break; } s += arr[i]; }
+      out[KEYS[ki]] = s;
+    });
+    return ok ? out : null;
   }
 
   async function pull(){
@@ -164,18 +244,17 @@ dialog .grid{grid-template-columns:1fr 1fr}
     var base = col(), mm = await base.doc(ID + "__meta").get();
     if(!mm.exists){ remoteMeta = null; if(hasLocal()) await push(); else st("✅ Connecté"); return; }
     remoteMeta = mm.data();
-    var qs = await base.where("app", "==", ID).get(), parts = {};
-    qs.forEach(function(d){ var x = d.data(); if(d.id === ID + "__meta") return; (parts[x.k] = parts[x.k] || [])[x.i] = x.s; });
-    var remote = {}, ok = true;
-    Object.keys(remoteMeta.keys || {}).forEach(function(ki){
-      var arr = parts[ki] || [];
-      if(arr.length !== remoteMeta.keys[ki] || arr.some(function(s){ return typeof s !== "string"; })) ok = false;
-      else remote[ki] = arr.join("");
-    });
-    if(!ok){ st("⚠️ Données cloud incomplètes, réessaie"); return; }
-    var same = KEYS.every(function(k, ki){ var l = _get.call(LS, k), r = remote[ki]; return (r === undefined ? l === null : l === r); });
-    var m = gm();
-    if(same){ m.t = remoteMeta.t; m.dirty = false; sm(m); st("✅ Synchronisé"); return; }
+    var legacy = !remoteMeta.parts, lp = localParts(), m = gm(), strings = null;
+
+    if(legacy){      /* données cloud à l'ancien format : lecture + migration */
+      strings = await fetchLegacy();
+      if(!strings){ st("⚠️ Données cloud incomplètes, réessaie"); return; }
+      var rp = splitWith(function(k){ return strings[k] === undefined ? null : strings[k]; }), h = {};
+      Object.keys(rp).forEach(function(n){ h[n] = {h:hash(rp[n])}; });
+      if(sameParts(lp, h)){ await push(); return; }
+    } else if(sameParts(lp, remoteMeta.parts)){
+      m.t = remoteMeta.t; m.dirty = false; sm(m); st("✅ Synchronisé"); return;
+    }
 
     var useCloud;
     if(!hasLocal()) useCloud = true;
@@ -185,10 +264,15 @@ dialog .grid{grid-template-columns:1fr 1fr}
     else useCloud = true;
 
     if(!useCloud){ await push(); return; }
+    if(!legacy){
+      var rparts = await fetchParts();
+      if(!rparts){ st("⚠️ Données cloud incomplètes, réessaie"); return; }
+      try{ strings = mergeParts(rparts); }catch(e){ console.warn("[cloud] merge", e); st("⚠️ Données cloud illisibles"); return; }
+    }
     var t0 = 0; try{ t0 = +sessionStorage.getItem("cloud_rl_" + ID) || 0; }catch(e){}
     if(Date.now() - t0 < 15000){ st("⚠️ Données cloud non appliquées (stockage plein ?)"); return; }
-    KEYS.forEach(function(k, ki){ if(remote[ki] !== undefined) _set.call(LS, k, remote[ki]); else _rem.call(LS, k); });
-    m.t = remoteMeta.t; m.dirty = false; sm(m);
+    KEYS.forEach(function(k){ if(strings[k] !== undefined) _set.call(LS, k, strings[k]); else _rem.call(LS, k); });
+    if(legacy) await push(); else { m.t = remoteMeta.t; m.dirty = false; sm(m); }
     try{ sessionStorage.setItem("cloud_rl_" + ID, String(Date.now())); }catch(e){}
     location.reload();
   }
@@ -211,7 +295,7 @@ dialog .grid{grid-template-columns:1fr 1fr}
       if(!auth){ b.innerHTML = '<div class="m">Synchronisation indisponible (mode local uniquement).</div>'; return; }
       if(user){
         b.innerHTML = '<div><b>Cloud</b></div><div class="m" id="s"></div><div class="m">' + (user.email || "") + '</div><button id="f" type="button">Forcer l’envoi</button><button id="o" type="button">Déconnexion</button>';
-        r.getElementById("f").onclick = function(){ var m = gm(); m.dirty = true; sm(m); push(); };
+        r.getElementById("f").onclick = function(){ var m = gm(); m.dirty = true; sm(m); push(true); };
         r.getElementById("o").onclick = function(){ auth.signOut(); b.hidden = true; };
       } else {
         b.innerHTML = '<div><b>Connexion cloud</b></div><label class="m">E-mail</label><input id="e" type="email" autocomplete="username"><label class="m">Mot de passe</label><input id="w" type="password" autocomplete="current-password"><div class="m" id="s"></div><button class="p" id="g" type="button">Se connecter</button>';
@@ -224,7 +308,7 @@ dialog .grid{grid-template-columns:1fr 1fr}
       var s = r.getElementById("s"); if(s && user) s.textContent = last;
     }
     p.onclick = function(){ b.hidden = !b.hidden; if(!b.hidden) render(); };
-    return { set:function(s){ p.textContent = "☁️ " + s.replace(/^\S+\s/, ""); var x = r.getElementById("s"); if(x && user) x.textContent = s; }, show:function(){ b.hidden = false; render(); } };
+    return { set:function(s){ p.textContent = "☁️ " + s.replace(/^\S+\s/, ""); var x = r.getElementById("s"); if(x && user) x.textContent = s; } };
   }
 
   function start(){
